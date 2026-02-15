@@ -318,8 +318,8 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                 <thead>
                     <tr>
                         <th>Graph</th>
-                        <th>Hash</th>
                         <th>Message</th>
+                        <th>Hash</th>
                         <th>Author</th>
                         <th>Date</th>
                     </tr>
@@ -330,11 +330,11 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                             <td class="graph-cell">
                                 <canvas class="graph-canvas" data-index="${index}"></canvas>
                             </td>
-                            <td class="hash-cell">${commit.shortHash}</td>
                             <td class="message-cell" title="${this.escapeHtml(commit.message)}">
                                 ${this.formatRefs(commit.refs)}
                                 <span class="message-text">${this.escapeHtml(commit.message)}</span>
                             </td>
+                            <td class="hash-cell">${commit.shortHash}</td>
                             <td class="author-cell">${this.escapeHtml(commit.author)}</td>
                             <td class="date-cell">${commit.date}</td>
                         </tr>
