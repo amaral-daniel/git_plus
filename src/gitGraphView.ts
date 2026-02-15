@@ -133,25 +133,27 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 0;
+            padding: 6px 8px;
             border-bottom: 1px solid var(--vscode-panel-border);
-            margin-bottom: 15px;
+            margin-bottom: 8px;
+            background-color: var(--vscode-editor-background);
         }
 
         h1 {
             margin: 0;
-            font-size: 18px;
+            font-size: 13px;
             font-weight: 600;
+            color: var(--vscode-foreground);
         }
 
         .refresh-btn {
             background-color: var(--vscode-button-background);
             color: var(--vscode-button-foreground);
             border: none;
-            padding: 6px 14px;
+            padding: 4px 10px;
             cursor: pointer;
             border-radius: 2px;
-            font-size: 13px;
+            font-size: 11px;
         }
 
         .refresh-btn:hover {
@@ -165,25 +167,30 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         thead {
             background-color: var(--vscode-editor-inactiveSelectionBackground);
             position: sticky;
             top: 0;
+            z-index: 10;
         }
 
         th {
             text-align: left;
-            padding: 10px 12px;
+            padding: 6px 8px;
             font-weight: 600;
-            border-bottom: 2px solid var(--vscode-panel-border);
+            font-size: 11px;
+            border-bottom: 1px solid var(--vscode-panel-border);
             white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--vscode-descriptionForeground);
         }
 
         td {
-            padding: 8px 12px;
+            padding: 4px 8px;
             border-bottom: 1px solid var(--vscode-panel-border);
         }
 
@@ -193,35 +200,40 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 
         .graph-cell {
             padding: 0;
-            width: 100px;
+            width: 80px;
         }
 
         .graph-canvas {
             display: block;
-            height: 40px;
+            height: 28px;
         }
 
         .hash-cell {
             font-family: var(--vscode-editor-font-family);
             color: var(--vscode-textLink-foreground);
-            font-weight: 600;
+            font-weight: 500;
             white-space: nowrap;
+            font-size: 11px;
         }
 
         .message-cell {
-            max-width: 400px;
+            max-width: 500px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            font-size: 12px;
         }
 
         .author-cell {
             white-space: nowrap;
+            color: var(--vscode-descriptionForeground);
+            font-size: 11px;
         }
 
         .date-cell {
             white-space: nowrap;
             color: var(--vscode-descriptionForeground);
+            font-size: 11px;
         }
 
         .no-commits {
@@ -284,9 +296,9 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             '#1abc9c', '#e67e22', '#34495e', '#16a085', '#c0392b'
         ];
 
-        const LANE_WIDTH = 20;
-        const ROW_HEIGHT = 40;
-        const COMMIT_RADIUS = 4;
+        const LANE_WIDTH = 16;
+        const ROW_HEIGHT = 28;
+        const COMMIT_RADIUS = 3;
 
         class GraphRenderer {
             constructor() {
