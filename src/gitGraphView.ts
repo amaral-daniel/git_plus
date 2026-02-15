@@ -131,19 +131,10 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 
         .header {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: center;
             padding: 6px 8px;
-            border-bottom: 1px solid var(--vscode-panel-border);
-            margin-bottom: 8px;
-            background-color: var(--vscode-editor-background);
-        }
-
-        h1 {
-            margin: 0;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--vscode-foreground);
+            margin-bottom: 4px;
         }
 
         .refresh-btn {
@@ -180,13 +171,12 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
         th {
             text-align: left;
             padding: 6px 8px;
-            font-weight: 600;
+            font-weight: 500;
             font-size: 11px;
             border-bottom: 1px solid var(--vscode-panel-border);
             white-space: nowrap;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--vscode-descriptionForeground);
+            color: var(--vscode-foreground);
+            opacity: 0.8;
         }
 
         td {
@@ -245,7 +235,6 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 </head>
 <body>
     <div class="header">
-        <h1>Git Graph</h1>
         <button class="refresh-btn" onclick="refresh()">Refresh</button>
     </div>
 
