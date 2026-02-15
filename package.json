@@ -9,11 +9,26 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onCommand:git-plus.showGraph"
-  ],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "git-plus",
+          "title": "Git Plus",
+          "icon": "$(git-branch)"
+        }
+      ]
+    },
+    "views": {
+      "git-plus": [
+        {
+          "id": "gitPlusGraphView",
+          "name": "Git Graph",
+          "type": "webview"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "git-plus.showGraph",

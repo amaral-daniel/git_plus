@@ -313,31 +313,27 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 
                 for (let i = 0; i < commits.length; i++) {
                     const commit = commits[i];
-
                     let lane = null;
 
-                    // Check if any parent is already assigned a lane
-                    for (const parent of commit.parents) {
-                        if (activeLanes.has(parent)) {
-                            lane = activeLanes.get(parent);
-                            activeLanes.delete(parent);
-                            break;
-                        }
-                    }
-
-                    // If no parent lane found, find a new available lane
-                    if (lane === null) {
+                    // Check if this commit was already reserved by a child commit
+                    if (activeLanes.has(commit.hash)) {
+                        lane = activeLanes.get(commit.hash);
+                        activeLanes.delete(commit.hash);
+                    } else {
+                        // Find a new available lane
                         const usedLanes = new Set(activeLanes.values());
                         lane = this.findAvailableLane(usedLanes);
                     }
 
                     this.commitLanes.set(commit.hash, lane);
 
-                    // Mark this commit's parents for continuation
+                    // Reserve lanes for parent commits
                     commit.parents.forEach((parent, idx) => {
                         if (idx === 0) {
+                            // First parent continues on same lane
                             activeLanes.set(parent, lane);
                         } else {
+                            // Additional parents (merge) get new lanes
                             const usedLanes = new Set(activeLanes.values());
                             activeLanes.set(parent, this.findAvailableLane(usedLanes));
                         }
@@ -364,7 +360,39 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                     const x = lane * LANE_WIDTH + 10;
                     const y = ROW_HEIGHT / 2;
 
-                    // Draw lines to parents
+                    // Draw line coming from above (from parent)
+                    if (index > 0) {
+                        // Check if any previous commit has this commit as a child
+                        for (let i = 0; i < index; i++) {
+                            const prevCommit = commits[i];
+                            if (prevCommit.parents.includes(commit.hash)) {
+                                const prevLane = this.commitLanes.get(prevCommit.hash);
+                                const prevX = prevLane * LANE_WIDTH + 10;
+
+                                ctx.strokeStyle = COLORS[lane % COLORS.length];
+                                ctx.lineWidth = 2;
+                                ctx.beginPath();
+
+                                if (lane === prevLane) {
+                                    // Straight line from top
+                                    ctx.moveTo(x, 0);
+                                    ctx.lineTo(x, y - COMMIT_RADIUS);
+                                } else {
+                                    // Curved line from different lane
+                                    ctx.moveTo(prevX, 0);
+                                    ctx.bezierCurveTo(
+                                        prevX, 10,
+                                        x, y - COMMIT_RADIUS - 10,
+                                        x, y - COMMIT_RADIUS
+                                    );
+                                }
+                                ctx.stroke();
+                                break;
+                            }
+                        }
+                    }
+
+                    // Draw lines going down to children (parents in git terminology)
                     commit.parents.forEach(parent => {
                         const parentIndex = commits.findIndex(c => c.hash === parent);
                         if (parentIndex !== -1 && parentIndex > index) {
@@ -374,15 +402,15 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                             ctx.strokeStyle = COLORS[lane % COLORS.length];
                             ctx.lineWidth = 2;
                             ctx.beginPath();
-                            ctx.moveTo(x, y);
+                            ctx.moveTo(x, y + COMMIT_RADIUS);
 
                             if (lane === parentLane) {
                                 // Straight line down
-                                ctx.lineTo(parentX, ROW_HEIGHT);
+                                ctx.lineTo(x, ROW_HEIGHT);
                             } else {
-                                // Curved merge line
+                                // Curved line to different lane
                                 ctx.bezierCurveTo(
-                                    x, y + 10,
+                                    x, y + COMMIT_RADIUS + 10,
                                     parentX, ROW_HEIGHT - 10,
                                     parentX, ROW_HEIGHT
                                 );
@@ -396,26 +424,9 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                     ctx.beginPath();
                     ctx.arc(x, y, COMMIT_RADIUS, 0, 2 * Math.PI);
                     ctx.fill();
-                    ctx.strokeStyle = '#000';
-                    ctx.lineWidth = 1.5;
+                    ctx.strokeStyle = '#2d2d2d';
+                    ctx.lineWidth = 2;
                     ctx.stroke();
-
-                    // Draw line from top if not first commit
-                    if (index > 0) {
-                        const prevCommits = commits.slice(0, index);
-                        const hasParentAbove = prevCommits.some(c =>
-                            commit.parents.includes(c.hash)
-                        );
-
-                        if (hasParentAbove) {
-                            ctx.strokeStyle = COLORS[lane % COLORS.length];
-                            ctx.lineWidth = 2;
-                            ctx.beginPath();
-                            ctx.moveTo(x, 0);
-                            ctx.lineTo(x, y - COMMIT_RADIUS);
-                            ctx.stroke();
-                        }
-                    }
                 });
             }
         }
