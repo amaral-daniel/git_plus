@@ -4,10 +4,12 @@ import * as path from 'path';
 
 interface GitCommit {
     hash: string;
+    shortHash: string;
     message: string;
     date: string;
     author: string;
     parents: string[];
+    refs: string[];
 }
 
 export class GitGraphViewProvider implements vscode.WebviewViewProvider {
@@ -117,8 +119,8 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 
             const cwd = workspaceFolders[0].uri.fsPath;
 
-            // Git log format: hash|parents|author|date|message
-            const gitCommand = 'git log --all --pretty=format:"%h|%p|%an|%ai|%s" --date-order';
+            // Git log format: fullHash|shortHash|parents|author|date|refs|message
+            const gitCommand = 'git log --all --pretty=format:"%H|%h|%P|%an|%ai|%D|%s" --date-order';
 
             cp.exec(gitCommand, { cwd }, (error, stdout, stderr) => {
                 if (error) {
@@ -131,13 +133,22 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                     .split('\n')
                     .filter(line => line.trim())
                     .map(line => {
-                        const [hash, parents, author, date, ...messageParts] = line.split('|');
+                        const [fullHash, shortHash, parents, author, date, refs, ...messageParts] = line.split('|');
+
+                        // Parse refs (branches, tags, HEAD)
+                        const refList = refs.trim()
+                            .split(',')
+                            .map(r => r.trim())
+                            .filter(r => r);
+
                         return {
-                            hash: hash.trim(),
+                            hash: fullHash.trim(),
+                            shortHash: shortHash.trim(),
                             message: messageParts.join('|').trim(),
                             date: new Date(date).toLocaleString(),
                             author: author.trim(),
-                            parents: parents.trim().split(' ').filter(p => p)
+                            parents: parents.trim().split(' ').map(p => p.trim()).filter(p => p),
+                            refs: refList
                         };
                     });
 
@@ -194,7 +205,6 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 
         td {
             padding: 4px 8px;
-            border-bottom: 1px solid var(--vscode-panel-border);
         }
 
         tbody tr:hover {
@@ -203,7 +213,8 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 
         .graph-cell {
             padding: 0;
-            width: 60px;
+            width: 120px;
+            min-width: 120px;
         }
 
         .graph-canvas {
@@ -221,10 +232,59 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
         }
 
         .message-cell {
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            overflow: hidden;
+        }
+
+        .message-text {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            font-size: 12px;
+        }
+
+        .refs-container {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+            align-items: center;
+        }
+
+        .ref-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 500;
+            white-space: nowrap;
+            border: 1px solid;
+        }
+
+        .ref-head {
+            background-color: var(--vscode-gitDecoration-modifiedResourceForeground);
+            border-color: var(--vscode-gitDecoration-modifiedResourceForeground);
+            color: var(--vscode-editor-background);
+            font-weight: 600;
+        }
+
+        .ref-branch {
+            background-color: transparent;
+            border-color: var(--vscode-gitDecoration-addedResourceForeground);
+            color: var(--vscode-gitDecoration-addedResourceForeground);
+        }
+
+        .ref-remote {
+            background-color: transparent;
+            border-color: var(--vscode-gitDecoration-untrackedResourceForeground);
+            color: var(--vscode-gitDecoration-untrackedResourceForeground);
+        }
+
+        .ref-tag {
+            background-color: transparent;
+            border-color: var(--vscode-gitDecoration-submoduleResourceForeground);
+            color: var(--vscode-gitDecoration-submoduleResourceForeground);
         }
 
         .author-cell {
@@ -270,8 +330,11 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                             <td class="graph-cell">
                                 <canvas class="graph-canvas" data-index="${index}"></canvas>
                             </td>
-                            <td class="hash-cell">${commit.hash}</td>
-                            <td class="message-cell" title="${this.escapeHtml(commit.message)}">${this.escapeHtml(commit.message)}</td>
+                            <td class="hash-cell">${commit.shortHash}</td>
+                            <td class="message-cell" title="${this.escapeHtml(commit.message)}">
+                                ${this.formatRefs(commit.refs)}
+                                <span class="message-text">${this.escapeHtml(commit.message)}</span>
+                            </td>
                             <td class="author-cell">${this.escapeHtml(commit.author)}</td>
                             <td class="date-cell">${commit.date}</td>
                         </tr>
@@ -295,9 +358,9 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             '#1abc9c', '#e67e22', '#34495e', '#16a085', '#c0392b'
         ];
 
-        const LANE_WIDTH = 16;
+        const LANE_WIDTH = 20;
         const ROW_HEIGHT = 28;
-        const COMMIT_RADIUS = 3;
+        const COMMIT_RADIUS = 4;
 
         class GraphRenderer {
             constructor() {
@@ -315,40 +378,56 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             }
 
             calculateLanes() {
-                const hashToIndex = new Map();
-                commits.forEach((commit, index) => {
-                    hashToIndex.set(commit.hash, index);
+                // Build a map of commits that have multiple children (branch points)
+                const childrenCount = new Map();
+                commits.forEach(commit => {
+                    commit.parents.forEach(parent => {
+                        childrenCount.set(parent, (childrenCount.get(parent) || 0) + 1);
+                    });
                 });
 
-                const activeLanes = new Map();
+                // Track which lanes are reserved for which commits
+                const reservedLanes = new Map(); // commit hash -> lane number
+                let nextLane = 0;
 
                 for (let i = 0; i < commits.length; i++) {
                     const commit = commits[i];
-                    let lane = null;
+                    let assignedLane;
 
-                    // Check if this commit was already reserved by a child commit
-                    if (activeLanes.has(commit.hash)) {
-                        lane = activeLanes.get(commit.hash);
-                        activeLanes.delete(commit.hash);
+                    // Check if this commit already has a reserved lane
+                    if (reservedLanes.has(commit.hash)) {
+                        assignedLane = reservedLanes.get(commit.hash);
+                        reservedLanes.delete(commit.hash);
                     } else {
-                        // Find a new available lane
-                        const usedLanes = new Set(activeLanes.values());
-                        lane = this.findAvailableLane(usedLanes);
+                        // Assign a new lane
+                        assignedLane = nextLane++;
                     }
 
-                    this.commitLanes.set(commit.hash, lane);
+                    this.commitLanes.set(commit.hash, assignedLane);
 
                     // Reserve lanes for parent commits
-                    commit.parents.forEach((parent, idx) => {
-                        if (idx === 0) {
-                            // First parent continues on same lane
-                            activeLanes.set(parent, lane);
-                        } else {
-                            // Additional parents (merge) get new lanes
-                            const usedLanes = new Set(activeLanes.values());
-                            activeLanes.set(parent, this.findAvailableLane(usedLanes));
+                    if (commit.parents.length > 0) {
+                        // First parent continues on the same lane
+                        const firstParent = commit.parents[0];
+                        if (!reservedLanes.has(firstParent)) {
+                            reservedLanes.set(firstParent, assignedLane);
                         }
-                    });
+
+                        // Additional parents (merge commits) get new lanes
+                        for (let j = 1; j < commit.parents.length; j++) {
+                            const parent = commit.parents[j];
+                            if (!reservedLanes.has(parent)) {
+                                // Find an available lane
+                                const usedLanes = new Set(reservedLanes.values());
+                                let newLane = 0;
+                                while (usedLanes.has(newLane)) {
+                                    newLane++;
+                                }
+                                reservedLanes.set(parent, newLane);
+                                nextLane = Math.max(nextLane, newLane + 1);
+                            }
+                        }
+                    }
                 }
             }
 
@@ -371,72 +450,95 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                     const x = lane * LANE_WIDTH + 10;
                     const y = ROW_HEIGHT / 2;
 
-                    // Draw line coming from above (from parent)
+                    // Draw passthrough lines for other lanes
                     if (index > 0) {
-                        // Check if any previous commit has this commit as a child
+                        const activeLanes = new Set();
+                        // Collect all active lanes from commits above that have parents below
                         for (let i = 0; i < index; i++) {
                             const prevCommit = commits[i];
-                            if (prevCommit.parents.includes(commit.hash)) {
-                                const prevLane = this.commitLanes.get(prevCommit.hash);
-                                const prevX = prevLane * LANE_WIDTH + 10;
+                            prevCommit.parents.forEach(parent => {
+                                const parentIndex = commits.findIndex(c => c.hash === parent);
+                                if (parentIndex > index) {
+                                    const parentLane = this.commitLanes.get(parent);
+                                    if (parentLane !== undefined && parentLane !== lane) {
+                                        activeLanes.add(parentLane);
+                                    }
+                                }
+                            });
+                        }
+
+                        // Draw passthrough lines
+                        activeLanes.forEach(passthroughLane => {
+                            const passthroughX = passthroughLane * LANE_WIDTH + 10;
+                            ctx.strokeStyle = COLORS[passthroughLane % COLORS.length];
+                            ctx.lineWidth = 2.5;
+                            ctx.beginPath();
+                            ctx.moveTo(passthroughX, 0);
+                            ctx.lineTo(passthroughX, ROW_HEIGHT);
+                            ctx.stroke();
+                        });
+                    }
+
+                    // Draw incoming line from child commit above
+                    if (index > 0) {
+                        for (let i = 0; i < index; i++) {
+                            const childCommit = commits[i];
+                            if (childCommit.parents.includes(commit.hash)) {
+                                const childLane = this.commitLanes.get(childCommit.hash);
+                                const childX = childLane * LANE_WIDTH + 10;
 
                                 ctx.strokeStyle = COLORS[lane % COLORS.length];
-                                ctx.lineWidth = 2;
+                                ctx.lineWidth = 2.5;
                                 ctx.beginPath();
 
-                                if (lane === prevLane) {
-                                    // Straight line from top
+                                if (lane === childLane) {
+                                    // Straight line from top to commit
                                     ctx.moveTo(x, 0);
                                     ctx.lineTo(x, y - COMMIT_RADIUS);
                                 } else {
                                     // Curved line from different lane
-                                    ctx.moveTo(prevX, 0);
+                                    const midY = ROW_HEIGHT / 2;
+                                    ctx.moveTo(childX, 0);
                                     ctx.bezierCurveTo(
-                                        prevX, 10,
-                                        x, y - COMMIT_RADIUS - 10,
+                                        childX, midY,
+                                        x, midY,
                                         x, y - COMMIT_RADIUS
                                     );
                                 }
                                 ctx.stroke();
-                                break;
                             }
                         }
                     }
 
-                    // Draw lines going down to children (parents in git terminology)
-                    commit.parents.forEach(parent => {
+                    // Draw outgoing lines to parent commits below
+                    commit.parents.forEach((parent, parentIdx) => {
                         const parentIndex = commits.findIndex(c => c.hash === parent);
                         if (parentIndex !== -1 && parentIndex > index) {
                             const parentLane = this.commitLanes.get(parent);
-                            const parentX = parentLane * LANE_WIDTH + 10;
 
-                            ctx.strokeStyle = COLORS[lane % COLORS.length];
-                            ctx.lineWidth = 2;
+                            // For same lane, draw straight line down
+                            // For different lanes, just draw straight down in current lane
+                            // The curve will be drawn by the parent's incoming line
+                            const lineColor = COLORS[lane % COLORS.length];
+
+                            ctx.strokeStyle = lineColor;
+                            ctx.lineWidth = 2.5;
                             ctx.beginPath();
                             ctx.moveTo(x, y + COMMIT_RADIUS);
-
-                            if (lane === parentLane) {
-                                // Straight line down
-                                ctx.lineTo(x, ROW_HEIGHT);
-                            } else {
-                                // Curved line to different lane
-                                ctx.bezierCurveTo(
-                                    x, y + COMMIT_RADIUS + 10,
-                                    parentX, ROW_HEIGHT - 10,
-                                    parentX, ROW_HEIGHT
-                                );
-                            }
+                            ctx.lineTo(x, ROW_HEIGHT);
                             ctx.stroke();
                         }
                     });
 
-                    // Draw commit dot
+                    // Draw commit dot (on top of lines)
                     ctx.fillStyle = COLORS[lane % COLORS.length];
                     ctx.beginPath();
                     ctx.arc(x, y, COMMIT_RADIUS, 0, 2 * Math.PI);
                     ctx.fill();
-                    ctx.strokeStyle = '#2d2d2d';
-                    ctx.lineWidth = 2;
+
+                    // Outline the commit dot
+                    ctx.strokeStyle = 'var(--vscode-editor-background)';
+                    ctx.lineWidth = 2.5;
                     ctx.stroke();
                 });
             }
@@ -458,5 +560,46 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
+    }
+
+    private formatRefs(refs: string[]): string {
+        if (!refs || refs.length === 0) {
+            return '';
+        }
+
+        return `<div class="refs-container">
+            ${refs.map(ref => {
+                let refClass = 'ref-badge';
+                let refName = ref;
+
+                // Skip HEAD -> branch pointers, just show the branch
+                if (ref.startsWith('HEAD -> ')) {
+                    return '';
+                }
+
+                // Determine ref type and format name
+                if (ref === 'HEAD') {
+                    // Local HEAD pointer
+                    refClass += ' ref-head';
+                    refName = 'HEAD';
+                } else if (ref.startsWith('tag: ')) {
+                    refClass += ' ref-tag';
+                    refName = ref.substring(5);
+                } else if (ref.includes('origin/HEAD') || ref.includes('upstream/HEAD')) {
+                    // Skip remote HEAD pointers
+                    return '';
+                } else if (ref.includes('origin/') || ref.includes('upstream/')) {
+                    refClass += ' ref-remote';
+                    // Clean up remote refs
+                    refName = ref.replace('refs/remotes/', '');
+                } else {
+                    refClass += ' ref-branch';
+                    // Clean up local branch refs
+                    refName = ref.replace('refs/heads/', '');
+                }
+
+                return `<span class="${refClass}">${this.escapeHtml(refName)}</span>`;
+            }).filter(badge => badge).join('')}
+        </div>`;
     }
 }
