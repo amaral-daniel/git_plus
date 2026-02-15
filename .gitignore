@@ -1,0 +1,31 @@
+# Compiled output
+out/
+dist/
+*.js
+*.js.map
+
+# Node modules
+node_modules/
+
+# VSCode extension packaging
+*.vsix
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories
+.vscode-test/
+.vscode-test-web/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+
+# TypeScript cache
+*.tsbuildinfo
