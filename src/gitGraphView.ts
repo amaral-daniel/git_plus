@@ -13,8 +13,12 @@ interface GitCommit {
 export class GitGraphViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'gitPlusGraphView';
     private static currentPanel: vscode.WebviewPanel | undefined;
+    private _view?: vscode.WebviewView;
+    private _watcher?: vscode.FileSystemWatcher;
 
-    constructor(private readonly _extensionUri: vscode.Uri) {}
+    constructor(private readonly _extensionUri: vscode.Uri) {
+        this.setupGitWatcher();
+    }
 
     public static createOrShow(extensionUri: vscode.Uri) {
         const column = vscode.window.activeTextEditor
@@ -59,12 +63,43 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
         context: vscode.WebviewViewResolveContext,
         _token: vscode.CancellationToken
     ) {
+        this._view = webviewView;
+
         webviewView.webview.options = {
             enableScripts: true,
             localResourceRoots: [this._extensionUri]
         };
 
         this.updateWebview(webviewView.webview);
+    }
+
+    private setupGitWatcher() {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+            return;
+        }
+
+        // Watch for changes in .git directory
+        this._watcher = vscode.workspace.createFileSystemWatcher(
+            new vscode.RelativePattern(workspaceFolders[0], '.git/**')
+        );
+
+        this._watcher.onDidChange(() => this.refresh());
+        this._watcher.onDidCreate(() => this.refresh());
+        this._watcher.onDidDelete(() => this.refresh());
+    }
+
+    private refresh() {
+        if (this._view) {
+            this.updateWebview(this._view.webview);
+        }
+        if (GitGraphViewProvider.currentPanel) {
+            this.updateWebview(GitGraphViewProvider.currentPanel.webview);
+        }
+    }
+
+    public dispose() {
+        this._watcher?.dispose();
     }
 
     private async updateWebview(webview: vscode.Webview) {
@@ -129,28 +164,6 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             margin: 0;
         }
 
-        .header {
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            padding: 6px 8px;
-            margin-bottom: 4px;
-        }
-
-        .refresh-btn {
-            background-color: var(--vscode-button-background);
-            color: var(--vscode-button-foreground);
-            border: none;
-            padding: 4px 10px;
-            cursor: pointer;
-            border-radius: 2px;
-            font-size: 11px;
-        }
-
-        .refresh-btn:hover {
-            background-color: var(--vscode-button-hoverBackground);
-        }
-
         .table-container {
             overflow-x: auto;
         }
@@ -190,7 +203,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 
         .graph-cell {
             padding: 0;
-            width: 80px;
+            width: 60px;
         }
 
         .graph-canvas {
@@ -204,10 +217,10 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             font-weight: 500;
             white-space: nowrap;
             font-size: 11px;
+            width: 80px;
         }
 
         .message-cell {
-            max-width: 500px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -218,12 +231,17 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             white-space: nowrap;
             color: var(--vscode-descriptionForeground);
             font-size: 11px;
+            width: 150px;
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .date-cell {
             white-space: nowrap;
             color: var(--vscode-descriptionForeground);
             font-size: 11px;
+            width: 140px;
         }
 
         .no-commits {
@@ -234,10 +252,6 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
     </style>
 </head>
 <body>
-    <div class="header">
-        <button class="refresh-btn" onclick="refresh()">Refresh</button>
-    </div>
-
     ${commits.length > 0 ? `
         <div class="table-container">
             <table>
@@ -274,10 +288,6 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
     <script>
         const vscode = acquireVsCodeApi();
         const commits = ${commitsJson};
-
-        function refresh() {
-            vscode.postMessage({ command: 'refresh' });
-        }
 
         // Graph drawing logic
         const COLORS = [
