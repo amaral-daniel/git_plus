@@ -53,8 +53,25 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 
         panel.webview.onDidReceiveMessage(
             message => {
-                if (message.command === 'refresh') {
-                    provider.updateWebview(panel.webview);
+                switch (message.command) {
+                    case 'refresh':
+                        provider.updateWebview(panel.webview);
+                        break;
+                    case 'editCommitMessage':
+                        provider.editCommitMessage(message.commitHash);
+                        break;
+                    case 'cherryPick':
+                        provider.cherryPickCommit(message.commitHash);
+                        break;
+                    case 'copyHash':
+                        provider.copyCommitHash(message.commitHash);
+                        break;
+                    case 'revertCommit':
+                        provider.revertCommit(message.commitHash);
+                        break;
+                    case 'resetToCommit':
+                        provider.resetToCommit(message.commitHash);
+                        break;
                 }
             }
         );
@@ -71,6 +88,31 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             enableScripts: true,
             localResourceRoots: [this._extensionUri]
         };
+
+        webviewView.webview.onDidReceiveMessage(
+            message => {
+                switch (message.command) {
+                    case 'refresh':
+                        this.updateWebview(webviewView.webview);
+                        break;
+                    case 'editCommitMessage':
+                        this.editCommitMessage(message.commitHash);
+                        break;
+                    case 'cherryPick':
+                        this.cherryPickCommit(message.commitHash);
+                        break;
+                    case 'copyHash':
+                        this.copyCommitHash(message.commitHash);
+                        break;
+                    case 'revertCommit':
+                        this.revertCommit(message.commitHash);
+                        break;
+                    case 'resetToCommit':
+                        this.resetToCommit(message.commitHash);
+                        break;
+                }
+            }
+        );
 
         this.updateWebview(webviewView.webview);
     }
@@ -102,6 +144,123 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 
     public dispose() {
         this._watcher?.dispose();
+    }
+
+    public async editCommitMessage(commitHash: string) {
+        const newMessage = await vscode.window.showInputBox({
+            prompt: 'Enter new commit message',
+            placeHolder: 'New commit message'
+        });
+
+        if (!newMessage) {
+            return;
+        }
+
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+            return;
+        }
+
+        const cwd = workspaceFolders[0].uri.fsPath;
+
+        cp.exec(`git commit --amend ${commitHash}~1..${commitHash} -m "${newMessage.replace(/"/g, '\\"')}"`, { cwd }, (error, stdout, stderr) => {
+            if (error) {
+                vscode.window.showErrorMessage(`Failed to edit commit message: ${error.message}`);
+                return;
+            }
+            vscode.window.showInformationMessage('Commit message updated successfully');
+            this.refresh();
+        });
+    }
+
+    public async cherryPickCommit(commitHash: string) {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+            return;
+        }
+
+        const cwd = workspaceFolders[0].uri.fsPath;
+
+        cp.exec(`git cherry-pick ${commitHash}`, { cwd }, (error, stdout, stderr) => {
+            if (error) {
+                vscode.window.showErrorMessage(`Failed to cherry-pick commit: ${error.message}\n${stderr}`);
+                return;
+            }
+            vscode.window.showInformationMessage('Commit cherry-picked successfully');
+            this.refresh();
+        });
+    }
+
+    public async copyCommitHash(commitHash: string) {
+        await vscode.env.clipboard.writeText(commitHash);
+        vscode.window.showInformationMessage('Commit hash copied to clipboard');
+    }
+
+    public async revertCommit(commitHash: string) {
+        const confirm = await vscode.window.showWarningMessage(
+            `Are you sure you want to revert commit ${commitHash.substring(0, 7)}?`,
+            'Yes', 'No'
+        );
+
+        if (confirm !== 'Yes') {
+            return;
+        }
+
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+            return;
+        }
+
+        const cwd = workspaceFolders[0].uri.fsPath;
+
+        cp.exec(`git revert ${commitHash} --no-edit`, { cwd }, (error, stdout, stderr) => {
+            if (error) {
+                vscode.window.showErrorMessage(`Failed to revert commit: ${error.message}\n${stderr}`);
+                return;
+            }
+            vscode.window.showInformationMessage('Commit reverted successfully');
+            this.refresh();
+        });
+    }
+
+    public async resetToCommit(commitHash: string) {
+        const resetType = await vscode.window.showQuickPick(
+            [
+                { label: 'Soft', description: 'Keep changes staged', value: '--soft' },
+                { label: 'Mixed', description: 'Keep changes unstaged', value: '--mixed' },
+                { label: 'Hard', description: 'Discard all changes', value: '--hard' }
+            ],
+            { placeHolder: 'Select reset type' }
+        );
+
+        if (!resetType) {
+            return;
+        }
+
+        const confirm = await vscode.window.showWarningMessage(
+            `Are you sure you want to reset to commit ${commitHash.substring(0, 7)} (${resetType.label})?`,
+            'Yes', 'No'
+        );
+
+        if (confirm !== 'Yes') {
+            return;
+        }
+
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) {
+            return;
+        }
+
+        const cwd = workspaceFolders[0].uri.fsPath;
+
+        cp.exec(`git reset ${resetType.value} ${commitHash}`, { cwd }, (error, stdout, stderr) => {
+            if (error) {
+                vscode.window.showErrorMessage(`Failed to reset: ${error.message}\n${stderr}`);
+                return;
+            }
+            vscode.window.showInformationMessage(`Reset to commit ${commitHash.substring(0, 7)} successfully`);
+            this.refresh();
+        });
     }
 
     private async updateWebview(webview: vscode.Webview) {
@@ -309,6 +468,41 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             padding: 40px;
             color: var(--vscode-descriptionForeground);
         }
+
+        .context-menu {
+            position: fixed;
+            background-color: var(--vscode-menu-background);
+            border: 1px solid var(--vscode-menu-border);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            min-width: 200px;
+            display: none;
+        }
+
+        .context-menu-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            color: var(--vscode-menu-foreground);
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .context-menu-item:hover {
+            background-color: var(--vscode-menu-selectionBackground);
+            color: var(--vscode-menu-selectionForeground);
+        }
+
+        .context-menu-separator {
+            height: 1px;
+            background-color: var(--vscode-menu-separatorBackground);
+            margin: 4px 0;
+        }
+
+        tbody tr {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -326,7 +520,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                 </thead>
                 <tbody id="commit-tbody">
                     ${commits.map((commit, index) => `
-                        <tr>
+                        <tr data-commit-hash="${commit.hash}" data-commit-index="${index}">
                             <td class="graph-cell">
                                 <canvas class="graph-canvas" data-index="${index}"></canvas>
                             </td>
@@ -341,6 +535,15 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                     `).join('')}
                 </tbody>
             </table>
+        </div>
+        <div id="context-menu" class="context-menu">
+            <div class="context-menu-item" data-action="copyHash">Copy Hash</div>
+            <div class="context-menu-separator"></div>
+            <div class="context-menu-item" data-action="cherryPick">Cherry Pick</div>
+            <div class="context-menu-item" data-action="revertCommit">Revert Commit</div>
+            <div class="context-menu-separator"></div>
+            <div class="context-menu-item" data-action="editCommitMessage">Edit Commit Message</div>
+            <div class="context-menu-item" data-action="resetToCommit">Reset to Commit</div>
         </div>
     ` : `
         <div class="no-commits">
@@ -547,6 +750,48 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
         if (commits.length > 0) {
             const renderer = new GraphRenderer();
             renderer.drawGraph();
+
+            // Context menu functionality
+            const contextMenu = document.getElementById('context-menu');
+            let selectedCommitHash = null;
+
+            // Show context menu on right-click
+            document.getElementById('commit-tbody').addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+
+                const row = e.target.closest('tr');
+                if (!row) {
+                    return;
+                }
+
+                selectedCommitHash = row.dataset.commitHash;
+
+                contextMenu.style.display = 'block';
+                contextMenu.style.left = e.pageX + 'px';
+                contextMenu.style.top = e.pageY + 'px';
+            });
+
+            // Hide context menu on click outside
+            document.addEventListener('click', () => {
+                contextMenu.style.display = 'none';
+            });
+
+            // Handle context menu item clicks
+            contextMenu.addEventListener('click', (e) => {
+                const item = e.target.closest('.context-menu-item');
+                if (!item || !selectedCommitHash) {
+                    return;
+                }
+
+                const action = item.dataset.action;
+
+                vscode.postMessage({
+                    command: action,
+                    commitHash: selectedCommitHash
+                });
+
+                contextMenu.style.display = 'none';
+            });
         }
     </script>
 </body>

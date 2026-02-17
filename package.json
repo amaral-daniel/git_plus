@@ -34,6 +34,31 @@
         "command": "git-plus.showGraph",
         "title": "Git Plus: Show Graph",
         "category": "Git Plus"
+      },
+      {
+        "command": "git-plus.editCommitMessage",
+        "title": "Git Plus: Edit Commit Message",
+        "category": "Git Plus"
+      },
+      {
+        "command": "git-plus.cherryPick",
+        "title": "Git Plus: Cherry Pick",
+        "category": "Git Plus"
+      },
+      {
+        "command": "git-plus.copyHash",
+        "title": "Git Plus: Copy Hash",
+        "category": "Git Plus"
+      },
+      {
+        "command": "git-plus.revertCommit",
+        "title": "Git Plus: Revert Commit",
+        "category": "Git Plus"
+      },
+      {
+        "command": "git-plus.resetToCommit",
+        "title": "Git Plus: Reset to Commit",
+        "category": "Git Plus"
       }
     ]
   },
