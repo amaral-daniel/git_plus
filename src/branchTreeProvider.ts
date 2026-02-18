@@ -66,7 +66,8 @@ export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeIte
                     branch.name,
                     vscode.TreeItemCollapsibleState.None,
                     isLocal ? 'local-branch' : 'remote-branch',
-                    branch.fullName
+                    branch.fullName,
+                    branch.isHead
                 ));
         }
 
@@ -137,12 +138,13 @@ export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeIte
     }
 }
 
-class BranchTreeItem extends vscode.TreeItem {
+export class BranchTreeItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
         public readonly contextValue: string,
-        public readonly branchName?: string
+        public readonly branchName?: string,
+        public readonly isHead?: boolean
     ) {
         super(label, collapsibleState);
 
@@ -150,12 +152,12 @@ class BranchTreeItem extends vscode.TreeItem {
             this.iconPath = new vscode.ThemeIcon('git-branch', new vscode.ThemeColor('gitDecoration.modifiedResourceForeground'));
             this.description = 'Current Branch';
         } else if (contextValue === 'local-branch') {
-            this.iconPath = new vscode.ThemeIcon('git-branch');
-            this.command = {
-                command: 'git-plus.checkoutBranch',
-                title: 'Checkout Branch',
-                arguments: [branchName]
-            };
+            if (isHead) {
+                this.iconPath = new vscode.ThemeIcon('git-branch', new vscode.ThemeColor('gitDecoration.modifiedResourceForeground'));
+                this.description = '✓';
+            } else {
+                this.iconPath = new vscode.ThemeIcon('git-branch');
+            }
         } else if (contextValue === 'remote-branch') {
             this.iconPath = new vscode.ThemeIcon('cloud');
         } else if (contextValue === 'folder') {

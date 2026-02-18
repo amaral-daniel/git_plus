@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import { GitGraphViewProvider } from './gitGraphView';
-import { BranchTreeProvider } from './branchTreeProvider';
+import { BranchTreeProvider, BranchTreeItem } from './branchTreeProvider';
 
 export function activate(context: vscode.ExtensionContext) {
     const provider = new GitGraphViewProvider(context.extensionUri);
@@ -11,9 +11,20 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.registerWebviewViewProvider(GitGraphViewProvider.viewType, provider)
     );
 
-    context.subscriptions.push(
-        vscode.window.registerTreeDataProvider('gitPlusBranchView', branchTreeProvider)
-    );
+    const branchTreeView = vscode.window.createTreeView('gitPlusBranchView', {
+        treeDataProvider: branchTreeProvider
+    });
+
+    branchTreeView.onDidChangeSelection(e => {
+        const selected = e.selection[0] as BranchTreeItem | undefined;
+        if (selected && (selected.contextValue === 'local-branch' || selected.contextValue === 'remote-branch')) {
+            provider.filterByBranch(selected.branchName || null);
+        } else {
+            provider.filterByBranch(null);
+        }
+    });
+
+    context.subscriptions.push(branchTreeView);
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-plus.showGraph', () => {

@@ -17,6 +17,12 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
     private static currentPanel: vscode.WebviewPanel | undefined;
     private _view?: vscode.WebviewView;
     private _watcher?: vscode.FileSystemWatcher;
+    private _filterBranch: string | null = null;
+
+    public filterByBranch(branch: string | null) {
+        this._filterBranch = branch;
+        this.refresh();
+    }
 
     constructor(private readonly _extensionUri: vscode.Uri) {
         this.setupGitWatcher();
@@ -34,7 +40,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 
         const panel = vscode.window.createWebviewPanel(
             GitGraphViewProvider.viewType,
-            'Git Graph',
+            'Tree',
             column || vscode.ViewColumn.One,
             {
                 enableScripts: true,
@@ -274,7 +280,8 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             const cwd = workspaceFolders[0].uri.fsPath;
 
             // Git log format: fullHash|shortHash|parents|author|date|refs|message
-            const gitCommand = 'git log --pretty=format:"%H|%h|%P|%an|%ai|%D|%s" --date-order';
+            const branchArg = this._filterBranch ? ` ${this._filterBranch}` : '';
+            const gitCommand = `git log${branchArg} --pretty=format:"%H|%h|%P|%an|%ai|%D|%s" --date-order`;
 
             cp.exec(gitCommand, { cwd }, (error, stdout, stderr) => {
                 if (error) {
@@ -319,7 +326,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Git Graph</title>
+    <title>Tree</title>
     <style>
         body {
             font-family: var(--vscode-font-family);

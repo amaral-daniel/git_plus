@@ -1,7 +1,7 @@
 {
   "name": "git-plus",
   "displayName": "Git Plus",
-  "description": "A git graph visualization extension for VSCode",
+  "description": "A minimalist git extension for VSCode",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.75.0"
@@ -29,7 +29,7 @@
         },
         {
           "id": "gitPlusGraphView",
-          "name": "Git Graph",
+          "name": "Tree",
           "type": "webview"
         }
       ]
