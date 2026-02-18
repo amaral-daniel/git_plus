@@ -23,9 +23,34 @@
     "views": {
       "git-plus": [
         {
+          "id": "gitPlusBranchView",
+          "name": "Branches",
+          "type": "tree"
+        },
+        {
           "id": "gitPlusGraphView",
           "name": "Git Graph",
           "type": "webview"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "git-plus.refreshBranches",
+          "when": "view == gitPlusBranchView",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "git-plus.checkoutBranch",
+          "when": "view == gitPlusBranchView && viewItem == local-branch",
+          "group": "inline"
+        },
+        {
+          "command": "git-plus.deleteBranch",
+          "when": "view == gitPlusBranchView && viewItem == local-branch"
         }
       ]
     },
@@ -59,6 +84,22 @@
         "command": "git-plus.resetToCommit",
         "title": "Git Plus: Reset to Commit",
         "category": "Git Plus"
+      },
+      {
+        "command": "git-plus.checkoutBranch",
+        "title": "Git Plus: Checkout Branch",
+        "category": "Git Plus"
+      },
+      {
+        "command": "git-plus.deleteBranch",
+        "title": "Git Plus: Delete Branch",
+        "category": "Git Plus"
+      },
+      {
+        "command": "git-plus.refreshBranches",
+        "title": "Git Plus: Refresh Branches",
+        "category": "Git Plus",
+        "icon": "$(refresh)"
       }
     ]
   },
