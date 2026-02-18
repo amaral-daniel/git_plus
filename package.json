@@ -45,8 +45,7 @@
       "view/item/context": [
         {
           "command": "git-plus.checkoutBranch",
-          "when": "view == gitPlusBranchView && viewItem == local-branch",
-          "group": "inline"
+          "when": "view == gitPlusBranchView && viewItem == local-branch"
         },
         {
           "command": "git-plus.deleteBranch",
@@ -87,18 +86,15 @@
       },
       {
         "command": "git-plus.checkoutBranch",
-        "title": "Git Plus: Checkout Branch",
-        "category": "Git Plus"
+        "title": "Checkout Branch"
       },
       {
         "command": "git-plus.deleteBranch",
-        "title": "Git Plus: Delete Branch",
-        "category": "Git Plus"
+        "title": "Delete Branch"
       },
       {
         "command": "git-plus.refreshBranches",
-        "title": "Git Plus: Refresh Branches",
-        "category": "Git Plus",
+        "title": "Refresh Branches",
         "icon": "$(refresh)"
       }
     ]
