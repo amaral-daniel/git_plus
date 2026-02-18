@@ -473,31 +473,40 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             position: fixed;
             background-color: var(--vscode-menu-background);
             border: 1px solid var(--vscode-menu-border);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px var(--vscode-widget-shadow);
             z-index: 1000;
             min-width: 200px;
             display: none;
+            padding: 4px 0;
+            overflow: hidden;
         }
 
         .context-menu-item {
-            padding: 8px 12px;
+            padding: 6px 20px;
             cursor: pointer;
             color: var(--vscode-menu-foreground);
-            font-size: 12px;
+            font-size: 13px;
             display: flex;
             align-items: center;
             gap: 8px;
+            user-select: none;
+            transition: background-color 0.1s ease;
         }
 
         .context-menu-item:hover {
-            background-color: var(--vscode-menu-selectionBackground);
-            color: var(--vscode-menu-selectionForeground);
+            background-color: var(--vscode-list-hoverBackground);
+            color: var(--vscode-list-hoverForeground);
+        }
+
+        .context-menu-item:first-child {
+            margin-top: 0;
         }
 
         .context-menu-separator {
             height: 1px;
             background-color: var(--vscode-menu-separatorBackground);
-            margin: 4px 0;
+            margin: 4px 8px;
         }
 
         tbody tr {
@@ -817,14 +826,16 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                 let refClass = 'ref-badge';
                 let refName = ref;
 
-                // Skip HEAD -> branch pointers, just show the branch
+                // Extract branch name from HEAD -> branch pointers
                 if (ref.startsWith('HEAD -> ')) {
-                    return '';
+                    refName = ref.substring(8); // Remove "HEAD -> " prefix
+                    refClass += ' ref-head';
+                    return `<span class="${refClass}">${this.escapeHtml(refName)}</span>`;
                 }
 
                 // Determine ref type and format name
                 if (ref === 'HEAD') {
-                    // Local HEAD pointer
+                    // Detached HEAD state
                     refClass += ' ref-head';
                     refName = 'HEAD';
                 } else if (ref.startsWith('tag: ')) {
