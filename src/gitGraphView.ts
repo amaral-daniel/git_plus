@@ -58,7 +58,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                         provider.updateWebview(panel.webview);
                         break;
                     case 'editCommitMessage':
-                        provider.editCommitMessage(message.commitHash);
+                        provider.editCommitMessage(message.commitHash, message.newMessage);
                         break;
                     case 'cherryPick':
                         provider.cherryPickCommit(message.commitHash);
@@ -96,7 +96,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                         this.updateWebview(webviewView.webview);
                         break;
                     case 'editCommitMessage':
-                        this.editCommitMessage(message.commitHash);
+                        this.editCommitMessage(message.commitHash, message.newMessage);
                         break;
                     case 'cherryPick':
                         this.cherryPickCommit(message.commitHash);
@@ -146,12 +146,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
         this._watcher?.dispose();
     }
 
-    public async editCommitMessage(commitHash: string) {
-        const newMessage = await vscode.window.showInputBox({
-            prompt: 'Enter new commit message',
-            placeHolder: 'New commit message'
-        });
-
+    public async editCommitMessage(commitHash: string, newMessage?: string) {
         if (!newMessage) {
             return;
         }
@@ -493,6 +488,18 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
         tbody tr {
             cursor: pointer;
         }
+
+        .message-edit-input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--vscode-focusBorder);
+            color: inherit;
+            font: inherit;
+            font-size: 12px;
+            outline: none;
+            padding: 0;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -726,6 +733,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             // Context menu functionality
             const contextMenu = document.getElementById('context-menu');
             let selectedCommitHash = null;
+            let selectedRow = null;
 
             // Show context menu on right-click
             document.getElementById('commit-tbody').addEventListener('contextmenu', (e) => {
@@ -737,6 +745,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                 }
 
                 selectedCommitHash = row.dataset.commitHash;
+                selectedRow = row;
 
                 contextMenu.style.display = 'block';
                 contextMenu.style.left = e.pageX + 'px';
@@ -751,18 +760,44 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             // Handle context menu item clicks
             contextMenu.addEventListener('click', (e) => {
                 const item = e.target.closest('.context-menu-item');
-                if (!item || !selectedCommitHash) {
+                if (!item || !selectedCommitHash) { return; }
+                const action = item.dataset.action;
+                contextMenu.style.display = 'none';
+
+                if (action === 'editCommitMessage') {
+                    const messageText = selectedRow.querySelector('.message-text');
+                    const original = messageText.textContent;
+
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.value = original;
+                    input.className = 'message-edit-input';
+                    messageText.replaceWith(input);
+                    input.focus();
+                    input.select();
+
+                    const confirmEdit = () => {
+                        const newMessage = input.value.trim();
+                        messageText.textContent = newMessage || original;
+                        input.replaceWith(messageText);
+                        if (newMessage && newMessage !== original) {
+                            vscode.postMessage({ command: 'editCommitMessage', commitHash: selectedCommitHash, newMessage });
+                        }
+                    };
+                    const cancelEdit = () => {
+                        messageText.textContent = original;
+                        input.replaceWith(messageText);
+                    };
+
+                    input.addEventListener('keydown', ev => {
+                        if (ev.key === 'Enter') { ev.preventDefault(); confirmEdit(); }
+                        if (ev.key === 'Escape') { ev.preventDefault(); cancelEdit(); }
+                    });
+                    input.addEventListener('blur', cancelEdit);
                     return;
                 }
 
-                const action = item.dataset.action;
-
-                vscode.postMessage({
-                    command: action,
-                    commitHash: selectedCommitHash
-                });
-
-                contextMenu.style.display = 'none';
+                vscode.postMessage({ command: action, commitHash: selectedCommitHash });
             });
         }
     </script>

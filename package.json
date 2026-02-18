@@ -50,6 +50,10 @@
         {
           "command": "git-plus.deleteBranch",
           "when": "view == gitPlusBranchView && viewItem == local-branch"
+        },
+        {
+          "command": "git-plus.createBranch",
+          "when": "view == gitPlusBranchView && (viewItem == local-branch || viewItem == remote-branch)"
         }
       ]
     },
@@ -96,6 +100,10 @@
         "command": "git-plus.refreshBranches",
         "title": "Refresh Branches",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "git-plus.createBranch",
+        "title": "Create New Branch Here"
       }
     ]
   },

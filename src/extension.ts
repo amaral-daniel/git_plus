@@ -52,7 +52,8 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-plus.checkoutBranch', async (branchName: string) => {
+        vscode.commands.registerCommand('git-plus.checkoutBranch', async (item: any) => {
+            const branchName = typeof item === 'string' ? item : item.branchName;
             const workspaceFolders = vscode.workspace.workspaceFolders;
             if (!workspaceFolders) {
                 return;
@@ -102,6 +103,37 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('git-plus.refreshBranches', () => {
             branchTreeProvider.refresh();
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('git-plus.createBranch', async (branchTreeItem: any) => {
+            const sourceBranch = branchTreeItem.branchName;
+
+            const newBranchName = await vscode.window.showInputBox({
+                prompt: `Create new branch from '${sourceBranch}'`,
+                placeHolder: 'New branch name',
+                validateInput: value => {
+                    if (!value || !value.trim()) { return 'Branch name cannot be empty'; }
+                    if (/[\s~^:?*\[\\]|\.\./.test(value)) { return 'Invalid branch name'; }
+                    return null;
+                }
+            });
+
+            if (!newBranchName) { return; }
+
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders) { return; }
+
+            const cwd = workspaceFolders[0].uri.fsPath;
+            cp.exec(`git checkout -b ${newBranchName} ${sourceBranch}`, { cwd }, (error, stdout, stderr) => {
+                if (error) {
+                    vscode.window.showErrorMessage(`Failed to create branch: ${stderr || error.message}`);
+                    return;
+                }
+                vscode.window.showInformationMessage(`Created and switched to branch '${newBranchName}'`);
+                branchTreeProvider.refresh();
+            });
         })
     );
 }
