@@ -279,7 +279,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             const cwd = workspaceFolders[0].uri.fsPath;
 
             // Git log format: fullHash|shortHash|parents|author|date|refs|message
-            const gitCommand = 'git log --all --pretty=format:"%H|%h|%P|%an|%ai|%D|%s" --date-order';
+            const gitCommand = 'git log --pretty=format:"%H|%h|%P|%an|%ai|%D|%s" --date-order';
 
             cp.exec(gitCommand, { cwd }, (error, stdout, stderr) => {
                 if (error) {
@@ -344,23 +344,6 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             font-size: 12px;
         }
 
-        thead {
-            background-color: var(--vscode-editor-inactiveSelectionBackground);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        th {
-            text-align: left;
-            padding: 6px 8px;
-            font-weight: 500;
-            font-size: 11px;
-            border-bottom: 1px solid var(--vscode-panel-border);
-            white-space: nowrap;
-            color: var(--vscode-foreground);
-            opacity: 0.8;
-        }
 
         td {
             padding: 4px 8px;
@@ -372,18 +355,16 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 
         .graph-cell {
             padding: 0;
-            width: 120px;
-            min-width: 120px;
+            width: 1px;
         }
 
         .graph-canvas {
             display: block;
-            height: 28px;
         }
 
         .hash-cell {
             font-family: var(--vscode-editor-font-family);
-            color: var(--vscode-textLink-foreground);
+            color: var(--vscode-descriptionForeground);
             font-weight: 500;
             white-space: nowrap;
             font-size: 11px;
@@ -518,15 +499,6 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
     ${commits.length > 0 ? `
         <div class="table-container">
             <table>
-                <thead>
-                    <tr>
-                        <th>Graph</th>
-                        <th>Message</th>
-                        <th>Hash</th>
-                        <th>Author</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
                 <tbody id="commit-tbody">
                     ${commits.map((commit, index) => `
                         <tr data-commit-hash="${commit.hash}" data-commit-index="${index}">
@@ -566,75 +538,56 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 
         // Graph drawing logic
         const COLORS = [
-            '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
-            '#1abc9c', '#e67e22', '#34495e', '#16a085', '#c0392b'
+            '#e8832a', '#3d9fd4', '#4faa5e', '#c75dd3', '#e05c5c',
+            '#1abc9c', '#9b59b6', '#e8b84b', '#16a085', '#d35400'
         ];
 
-        const LANE_WIDTH = 20;
+        const LANE_WIDTH = 18;
         const ROW_HEIGHT = 28;
-        const COMMIT_RADIUS = 4;
+        const COMMIT_RADIUS = 5;
+        const LINE_WIDTH = 2;
+
+        // Snap to half-pixel so 1-2px lines land exactly on pixel boundaries
+        const px = v => Math.round(v) + 0.5;
+
+        // Identify the HEAD commit hash
+        const headCommitHash = (commits.find(c =>
+            c.refs.some(r => r.startsWith('HEAD -> ') || r === 'HEAD')
+        ) || commits[0])?.hash;
 
         class GraphRenderer {
             constructor() {
-                this.lanes = [];
                 this.commitLanes = new Map();
             }
 
-            findAvailableLane(usedLanes) {
-                for (let i = 0; i < 10; i++) {
-                    if (!usedLanes.has(i)) {
-                        return i;
-                    }
-                }
-                return usedLanes.size;
-            }
-
             calculateLanes() {
-                // Build a map of commits that have multiple children (branch points)
-                const childrenCount = new Map();
-                commits.forEach(commit => {
-                    commit.parents.forEach(parent => {
-                        childrenCount.set(parent, (childrenCount.get(parent) || 0) + 1);
-                    });
-                });
-
-                // Track which lanes are reserved for which commits
-                const reservedLanes = new Map(); // commit hash -> lane number
+                const reservedLanes = new Map();
                 let nextLane = 0;
 
                 for (let i = 0; i < commits.length; i++) {
                     const commit = commits[i];
                     let assignedLane;
 
-                    // Check if this commit already has a reserved lane
                     if (reservedLanes.has(commit.hash)) {
                         assignedLane = reservedLanes.get(commit.hash);
                         reservedLanes.delete(commit.hash);
                     } else {
-                        // Assign a new lane
                         assignedLane = nextLane++;
                     }
 
                     this.commitLanes.set(commit.hash, assignedLane);
 
-                    // Reserve lanes for parent commits
                     if (commit.parents.length > 0) {
-                        // First parent continues on the same lane
                         const firstParent = commit.parents[0];
                         if (!reservedLanes.has(firstParent)) {
                             reservedLanes.set(firstParent, assignedLane);
                         }
-
-                        // Additional parents (merge commits) get new lanes
                         for (let j = 1; j < commit.parents.length; j++) {
                             const parent = commit.parents[j];
                             if (!reservedLanes.has(parent)) {
-                                // Find an available lane
                                 const usedLanes = new Set(reservedLanes.values());
                                 let newLane = 0;
-                                while (usedLanes.has(newLane)) {
-                                    newLane++;
-                                }
+                                while (usedLanes.has(newLane)) { newLane++; }
                                 reservedLanes.set(parent, newLane);
                                 nextLane = Math.max(nextLane, newLane + 1);
                             }
@@ -648,110 +601,120 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 
                 const canvases = document.querySelectorAll('.graph-canvas');
                 const maxLane = Math.max(...Array.from(this.commitLanes.values())) + 1;
-                const canvasWidth = maxLane * LANE_WIDTH + 20;
+                const canvasWidth = maxLane * LANE_WIDTH + 12;
+
+                const dpr = window.devicePixelRatio || 1;
 
                 canvases.forEach(canvas => {
                     const index = parseInt(canvas.dataset.index);
                     const commit = commits[index];
 
-                    canvas.width = canvasWidth;
-                    canvas.height = ROW_HEIGHT;
+                    canvas.width = canvasWidth * dpr;
+                    canvas.height = ROW_HEIGHT * dpr;
+                    canvas.style.width = canvasWidth + 'px';
+                    canvas.style.height = ROW_HEIGHT + 'px';
 
                     const ctx = canvas.getContext('2d');
+                    ctx.scale(dpr, dpr);
+                    ctx.imageSmoothingEnabled = false;
                     const lane = this.commitLanes.get(commit.hash);
-                    const x = lane * LANE_WIDTH + 10;
+                    const color = COLORS[lane % COLORS.length];
+                    const x = px(lane * LANE_WIDTH + 10);
                     const y = ROW_HEIGHT / 2;
 
-                    // Draw passthrough lines for other lanes
-                    if (index > 0) {
-                        const activeLanes = new Set();
-                        // Collect all active lanes from commits above that have parents below
-                        for (let i = 0; i < index; i++) {
-                            const prevCommit = commits[i];
-                            prevCommit.parents.forEach(parent => {
-                                const parentIndex = commits.findIndex(c => c.hash === parent);
-                                if (parentIndex > index) {
-                                    const parentLane = this.commitLanes.get(parent);
-                                    if (parentLane !== undefined && parentLane !== lane) {
-                                        activeLanes.add(parentLane);
-                                    }
+                    // 1. Draw passthrough lines for lanes active at this row
+                    for (let i = 0; i < index; i++) {
+                        commits[i].parents.forEach(parent => {
+                            const parentIndex = commits.findIndex(c => c.hash === parent);
+                            if (parentIndex > index) {
+                                const pl = this.commitLanes.get(parent);
+                                if (pl !== undefined && pl !== lane) {
+                                    const plx = px(pl * LANE_WIDTH + 10);
+                                    ctx.strokeStyle = COLORS[pl % COLORS.length];
+                                    ctx.lineWidth = LINE_WIDTH;
+                                    ctx.beginPath();
+                                    ctx.moveTo(plx, 0);
+                                    ctx.lineTo(plx, ROW_HEIGHT);
+                                    ctx.stroke();
                                 }
-                            });
-                        }
-
-                        // Draw passthrough lines
-                        activeLanes.forEach(passthroughLane => {
-                            const passthroughX = passthroughLane * LANE_WIDTH + 10;
-                            ctx.strokeStyle = COLORS[passthroughLane % COLORS.length];
-                            ctx.lineWidth = 2.5;
-                            ctx.beginPath();
-                            ctx.moveTo(passthroughX, 0);
-                            ctx.lineTo(passthroughX, ROW_HEIGHT);
-                            ctx.stroke();
+                            }
                         });
                     }
 
-                    // Draw incoming line from child commit above
-                    if (index > 0) {
-                        for (let i = 0; i < index; i++) {
-                            const childCommit = commits[i];
-                            if (childCommit.parents.includes(commit.hash)) {
-                                const childLane = this.commitLanes.get(childCommit.hash);
-                                const childX = childLane * LANE_WIDTH + 10;
+                    // 2. Draw this commit's lane line
+                    const hasIncoming = index > 0 && commits.slice(0, index).some(c => c.parents.includes(commit.hash));
+                    const hasOutgoing = commit.parents.some(p => commits.findIndex(c => c.hash === p) > index);
 
-                                ctx.strokeStyle = COLORS[lane % COLORS.length];
-                                ctx.lineWidth = 2.5;
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = LINE_WIDTH;
+                    if (hasIncoming) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, 0);
+                        ctx.lineTo(x, y);
+                        ctx.stroke();
+                    }
+                    if (hasOutgoing) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x, ROW_HEIGHT);
+                        ctx.stroke();
+                    }
+
+                    // 3. Draw merge/branch connection lines to other lanes
+                    for (let i = 0; i < index; i++) {
+                        const childCommit = commits[i];
+                        if (childCommit.parents.includes(commit.hash)) {
+                            const childLane = this.commitLanes.get(childCommit.hash);
+                            if (childLane !== lane) {
+                                const childX = px(childLane * LANE_WIDTH + 10);
+                                ctx.strokeStyle = color;
+                                ctx.lineWidth = LINE_WIDTH;
                                 ctx.beginPath();
-
-                                if (lane === childLane) {
-                                    // Straight line from top to commit
-                                    ctx.moveTo(x, 0);
-                                    ctx.lineTo(x, y - COMMIT_RADIUS);
-                                } else {
-                                    // Curved line from different lane
-                                    const midY = ROW_HEIGHT / 2;
-                                    ctx.moveTo(childX, 0);
-                                    ctx.bezierCurveTo(
-                                        childX, midY,
-                                        x, midY,
-                                        x, y - COMMIT_RADIUS
-                                    );
-                                }
+                                ctx.moveTo(childX, 0);
+                                ctx.bezierCurveTo(childX, y, x, 0, x, y);
                                 ctx.stroke();
                             }
                         }
                     }
-
-                    // Draw outgoing lines to parent commits below
-                    commit.parents.forEach((parent, parentIdx) => {
+                    commit.parents.forEach(parent => {
                         const parentIndex = commits.findIndex(c => c.hash === parent);
-                        if (parentIndex !== -1 && parentIndex > index) {
+                        if (parentIndex > index) {
                             const parentLane = this.commitLanes.get(parent);
-
-                            // For same lane, draw straight line down
-                            // For different lanes, just draw straight down in current lane
-                            // The curve will be drawn by the parent's incoming line
-                            const lineColor = COLORS[lane % COLORS.length];
-
-                            ctx.strokeStyle = lineColor;
-                            ctx.lineWidth = 2.5;
-                            ctx.beginPath();
-                            ctx.moveTo(x, y + COMMIT_RADIUS);
-                            ctx.lineTo(x, ROW_HEIGHT);
-                            ctx.stroke();
+                            if (parentLane !== undefined && parentLane !== lane) {
+                                const parentX = px(parentLane * LANE_WIDTH + 10);
+                                ctx.strokeStyle = color;
+                                ctx.lineWidth = LINE_WIDTH;
+                                ctx.beginPath();
+                                ctx.moveTo(x, y);
+                                ctx.bezierCurveTo(x, ROW_HEIGHT, parentX, y, parentX, ROW_HEIGHT);
+                                ctx.stroke();
+                            }
                         }
                     });
 
-                    // Draw commit dot (on top of lines)
-                    ctx.fillStyle = COLORS[lane % COLORS.length];
-                    ctx.beginPath();
-                    ctx.arc(x, y, COMMIT_RADIUS, 0, 2 * Math.PI);
-                    ctx.fill();
-
-                    // Outline the commit dot
-                    ctx.strokeStyle = 'var(--vscode-editor-background)';
-                    ctx.lineWidth = 2.5;
-                    ctx.stroke();
+                    // 4. Draw commit dot on top of all lines
+                    const dotX = Math.round(lane * LANE_WIDTH + 10);
+                    const dotY = Math.round(y);
+                    const isHead = commit.hash === headCommitHash;
+                    if (isHead) {
+                        // Hollow ring for HEAD — fill with transparent then stroke
+                        ctx.clearRect(dotX - COMMIT_RADIUS - 1, dotY - COMMIT_RADIUS - 1, (COMMIT_RADIUS + 1) * 2, (COMMIT_RADIUS + 1) * 2);
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(dotX, dotY, COMMIT_RADIUS, 0, 2 * Math.PI);
+                        ctx.stroke();
+                        ctx.fillStyle = color;
+                        ctx.beginPath();
+                        ctx.arc(dotX, dotY, 2, 0, 2 * Math.PI);
+                        ctx.fill();
+                    } else {
+                        // Solid filled dot
+                        ctx.fillStyle = color;
+                        ctx.beginPath();
+                        ctx.arc(dotX, dotY, COMMIT_RADIUS, 0, 2 * Math.PI);
+                        ctx.fill();
+                    }
                 });
             }
         }
