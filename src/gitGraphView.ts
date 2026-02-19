@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
 
 interface GitCommit {
     hash: string;
@@ -78,6 +80,12 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                     case 'resetToCommit':
                         provider.resetToCommit(message.commitHash);
                         break;
+                    case 'squashCommits':
+                        provider.squashCommits(message.hashes, message.parentHash);
+                        break;
+                    case 'cherryPickRange':
+                        provider.cherryPickRange(message.hashes);
+                        break;
                 }
             }
         );
@@ -115,6 +123,12 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                         break;
                     case 'resetToCommit':
                         this.resetToCommit(message.commitHash);
+                        break;
+                    case 'squashCommits':
+                        this.squashCommits(message.hashes, message.parentHash);
+                        break;
+                    case 'cherryPickRange':
+                        this.cherryPickRange(message.hashes);
                         break;
                 }
             }
@@ -260,6 +274,108 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                 return;
             }
             vscode.window.showInformationMessage(`Reset to commit ${commitHash.substring(0, 7)} successfully`);
+            this.refresh();
+        });
+    }
+
+    public async squashCommits(hashes: string[], parentHash: string) {
+        if (!parentHash) {
+            vscode.window.showErrorMessage('Cannot squash: oldest selected commit has no parent.');
+            return;
+        }
+
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) { return; }
+        const cwd = workspaceFolders[0].uri.fsPath;
+
+        const newMessage = await vscode.window.showInputBox({
+            prompt: `Squash ${hashes.length} commits into one`,
+            placeHolder: 'New commit message',
+            validateInput: v => (!v || !v.trim()) ? 'Message cannot be empty' : null
+        });
+        if (!newMessage) { return; }
+
+        const headHash = await new Promise<string>(resolve => {
+            cp.exec('git rev-parse HEAD', { cwd }, (err, stdout) => resolve(err ? '' : stdout.trim()));
+        });
+
+        if (hashes[0] === headHash) {
+            // Selection ends at HEAD — simple reset + commit
+            const escaped = newMessage.replace(/"/g, '\\"');
+            cp.exec(`git reset --soft ${parentHash}`, { cwd }, error => {
+                if (error) { vscode.window.showErrorMessage(`Failed to squash: ${error.message}`); return; }
+                cp.exec(`git commit -m "${escaped}"`, { cwd }, err2 => {
+                    if (err2) { vscode.window.showErrorMessage(`Failed to commit squash: ${err2.message}`); return; }
+                    vscode.window.showInformationMessage(`Squashed ${hashes.length} commits successfully`);
+                    this.refresh();
+                });
+            });
+        } else {
+            // Selection is in the middle — use interactive rebase with scripted editors.
+            // hashes[hashes.length-1] is the oldest selected (stays 'pick');
+            // all others become 'squash'.
+            const squashableHashes = hashes.slice(0, -1);
+
+            const seqEditorScript = `
+const fs = require('fs');
+const file = process.argv[2];
+const squashHashes = ${JSON.stringify(squashableHashes)};
+const lines = fs.readFileSync(file, 'utf8').split('\\n');
+const result = lines.map(line => {
+    const parts = line.trim().split(/\\s+/);
+    if ((parts[0] === 'pick' || parts[0] === 'p') && parts[1]) {
+        if (squashHashes.some(h => h.startsWith(parts[1]))) {
+            return 'squash ' + parts.slice(1).join(' ');
+        }
+    }
+    return line;
+});
+fs.writeFileSync(file, result.join('\\n'));
+`;
+            const msgEditorScript = `
+const fs = require('fs');
+fs.writeFileSync(process.argv[2], ${JSON.stringify(newMessage + '\n')});
+`;
+
+            const tmpDir = os.tmpdir();
+            const seqEditorPath = path.join(tmpDir, 'git-plus-seq-editor.js');
+            const msgEditorPath = path.join(tmpDir, 'git-plus-msg-editor.js');
+            fs.writeFileSync(seqEditorPath, seqEditorScript);
+            fs.writeFileSync(msgEditorPath, msgEditorScript);
+
+            const env = {
+                ...process.env,
+                GIT_SEQUENCE_EDITOR: `node "${seqEditorPath}"`,
+                GIT_EDITOR: `node "${msgEditorPath}"`
+            };
+
+            cp.exec(`git rebase -i ${parentHash}`, { cwd, env }, (error, _stdout, stderr) => {
+                try { fs.unlinkSync(seqEditorPath); } catch {}
+                try { fs.unlinkSync(msgEditorPath); } catch {}
+                if (error) {
+                    cp.exec('git rebase --abort', { cwd }, () => {});
+                    vscode.window.showErrorMessage(`Failed to squash: ${error.message}\n${stderr}`);
+                    return;
+                }
+                vscode.window.showInformationMessage(`Squashed ${hashes.length} commits successfully`);
+                this.refresh();
+            });
+        }
+    }
+
+    public async cherryPickRange(hashes: string[]) {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) { return; }
+        const cwd = workspaceFolders[0].uri.fsPath;
+
+        // hashes are newest-first; cherry-pick oldest to newest
+        const ordered = [...hashes].reverse().join(' ');
+        cp.exec(`git cherry-pick ${ordered}`, { cwd }, (error, _stdout, stderr) => {
+            if (error) {
+                vscode.window.showErrorMessage(`Failed to cherry-pick: ${error.message}\n${stderr}`);
+                return;
+            }
+            vscode.window.showInformationMessage(`Cherry-picked ${hashes.length} commits successfully`);
             this.refresh();
         });
     }
@@ -507,6 +623,14 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             padding: 0;
             width: 100%;
         }
+
+        tr.row-selected {
+            background-color: var(--vscode-list-inactiveSelectionBackground);
+        }
+
+        tr.row-selected:hover {
+            background-color: var(--vscode-list-activeSelectionBackground);
+        }
     </style>
 </head>
 <body>
@@ -539,6 +663,11 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             <div class="context-menu-separator"></div>
             <div class="context-menu-item" data-action="editCommitMessage">Edit Commit Message</div>
             <div class="context-menu-item" data-action="resetToCommit">Reset to Commit</div>
+        </div>
+        <div id="range-context-menu" class="context-menu">
+            <div class="context-menu-item" data-action="squashCommits">Squash Commits</div>
+            <div class="context-menu-separator"></div>
+            <div class="context-menu-item" data-action="cherryPickRange">Cherry-pick Commits</div>
         </div>
     ` : `
         <div class="no-commits">
@@ -737,34 +866,91 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             const renderer = new GraphRenderer();
             renderer.drawGraph();
 
-            // Context menu functionality
             const contextMenu = document.getElementById('context-menu');
+            const rangeContextMenu = document.getElementById('range-context-menu');
             let selectedCommitHash = null;
             let selectedRow = null;
+            let rangeStartIndex = null;
+            let selectedIndices = new Set();
 
-            // Show context menu on right-click
+            function updateRowHighlights() {
+                document.querySelectorAll('tr[data-commit-index]').forEach(r => {
+                    const idx = parseInt(r.dataset.commitIndex);
+                    r.classList.toggle('row-selected', selectedIndices.has(idx));
+                });
+            }
+
+            function areCommitsConsecutive(sortedIndices) {
+                for (let i = 0; i < sortedIndices.length - 1; i++) {
+                    const newer = commits[sortedIndices[i]];
+                    const older = commits[sortedIndices[i + 1]];
+                    if (newer.parents.length !== 1 || !newer.parents.includes(older.hash)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            // Shift-click range selection
+            document.getElementById('commit-tbody').addEventListener('click', (e) => {
+                const row = e.target.closest('tr');
+                if (!row) { return; }
+                const clickedIndex = parseInt(row.dataset.commitIndex);
+
+                if (e.shiftKey && rangeStartIndex !== null) {
+                    const min = Math.min(rangeStartIndex, clickedIndex);
+                    const max = Math.max(rangeStartIndex, clickedIndex);
+                    selectedIndices = new Set();
+                    for (let i = min; i <= max; i++) { selectedIndices.add(i); }
+                } else {
+                    rangeStartIndex = clickedIndex;
+                    selectedIndices = new Set([clickedIndex]);
+                }
+                updateRowHighlights();
+            });
+
+            // Right-click context menu
             document.getElementById('commit-tbody').addEventListener('contextmenu', (e) => {
                 e.preventDefault();
+                contextMenu.style.display = 'none';
+                rangeContextMenu.style.display = 'none';
 
                 const row = e.target.closest('tr');
-                if (!row) {
-                    return;
+                if (!row) { return; }
+
+                const clickedIndex = parseInt(row.dataset.commitIndex);
+
+                if (selectedIndices.size > 1 && selectedIndices.has(clickedIndex)) {
+                    // Range context menu
+                    const sortedIndices = Array.from(selectedIndices).sort((a, b) => a - b);
+                    const consecutive = areCommitsConsecutive(sortedIndices);
+                    const squashItem = rangeContextMenu.querySelector('[data-action="squashCommits"]');
+                    const separator = rangeContextMenu.querySelector('.context-menu-separator');
+                    squashItem.style.display = consecutive ? 'flex' : 'none';
+                    separator.style.display = consecutive ? 'block' : 'none';
+                    rangeContextMenu.style.display = 'block';
+                    rangeContextMenu.style.left = e.pageX + 'px';
+                    rangeContextMenu.style.top = e.pageY + 'px';
+                } else {
+                    // Single commit context menu
+                    selectedCommitHash = row.dataset.commitHash;
+                    selectedRow = row;
+                    rangeStartIndex = clickedIndex;
+                    selectedIndices = new Set([clickedIndex]);
+                    updateRowHighlights();
+                    contextMenu.style.display = 'block';
+                    contextMenu.style.left = e.pageX + 'px';
+                    contextMenu.style.top = e.pageY + 'px';
                 }
-
-                selectedCommitHash = row.dataset.commitHash;
-                selectedRow = row;
-
-                contextMenu.style.display = 'block';
-                contextMenu.style.left = e.pageX + 'px';
-                contextMenu.style.top = e.pageY + 'px';
             });
 
-            // Hide context menu on click outside
+            // Hide menus on click outside
             document.addEventListener('click', () => {
                 contextMenu.style.display = 'none';
+                rangeContextMenu.style.display = 'none';
             });
 
-            // Handle context menu item clicks
+            // Single commit menu actions
             contextMenu.addEventListener('click', (e) => {
                 const item = e.target.closest('.context-menu-item');
                 if (!item || !selectedCommitHash) { return; }
@@ -805,6 +991,21 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                 }
 
                 vscode.postMessage({ command: action, commitHash: selectedCommitHash });
+            });
+
+            // Range menu actions
+            rangeContextMenu.addEventListener('click', (e) => {
+                const item = e.target.closest('.context-menu-item');
+                if (!item) { return; }
+                const action = item.dataset.action;
+                rangeContextMenu.style.display = 'none';
+
+                // sortedIndices: ascending index order (lower index = newer commit)
+                const sortedIndices = Array.from(selectedIndices).sort((a, b) => a - b);
+                const hashes = sortedIndices.map(i => commits[i].hash);
+                const oldestIndex = sortedIndices[sortedIndices.length - 1];
+                const parentHash = commits[oldestIndex].parents[0];
+                vscode.postMessage({ command: action, hashes, parentHash });
             });
         }
     </script>
