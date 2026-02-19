@@ -118,6 +118,26 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
+        vscode.commands.registerCommand('git-plus.rebaseBranch', async (branchTreeItem: any) => {
+            const targetBranch = branchTreeItem.branchName;
+
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders) { return; }
+            const cwd = workspaceFolders[0].uri.fsPath;
+
+            cp.exec(`git rebase ${targetBranch}`, { cwd }, (error, _stdout, stderr) => {
+                if (error) {
+                    cp.exec('git rebase --abort', { cwd }, () => {});
+                    vscode.window.showErrorMessage(`Rebase failed: ${stderr || error.message}`);
+                    return;
+                }
+                vscode.window.showInformationMessage(`Rebased onto '${targetBranch}' successfully`);
+                branchTreeProvider.refresh();
+            });
+        })
+    );
+
+    context.subscriptions.push(
         vscode.commands.registerCommand('git-plus.createBranch', async (branchTreeItem: any) => {
             const sourceBranch = branchTreeItem.branchName;
 
