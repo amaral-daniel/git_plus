@@ -53,10 +53,14 @@
         },
         {
           "command": "git-plus.createBranch",
-          "when": "view == gitPlusBranchView && (viewItem == local-branch || viewItem == remote-branch)"
+          "when": "view == gitPlusBranchView && (viewItem == local-branch || viewItem == local-branch-head || viewItem == remote-branch)"
         },
         {
           "command": "git-plus.rebaseBranch",
+          "when": "view == gitPlusBranchView && (viewItem == local-branch || viewItem == remote-branch)"
+        },
+        {
+          "command": "git-plus.mergeBranch",
           "when": "view == gitPlusBranchView && (viewItem == local-branch || viewItem == remote-branch)"
         }
       ]
@@ -112,6 +116,10 @@
       {
         "command": "git-plus.rebaseBranch",
         "title": "Rebase Current Branch onto This"
+      },
+      {
+        "command": "git-plus.mergeBranch",
+        "title": "Merge Branch into Current"
       }
     ]
   },

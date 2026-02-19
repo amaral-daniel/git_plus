@@ -65,7 +65,7 @@ export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeIte
                 .map(branch => new BranchTreeItem(
                     branch.name,
                     vscode.TreeItemCollapsibleState.None,
-                    isLocal ? 'local-branch' : 'remote-branch',
+                    isLocal ? (branch.isHead ? 'local-branch-head' : 'local-branch') : 'remote-branch',
                     branch.fullName,
                     branch.isHead
                 ));
@@ -151,13 +151,11 @@ export class BranchTreeItem extends vscode.TreeItem {
         if (contextValue === 'head') {
             this.iconPath = new vscode.ThemeIcon('git-branch', new vscode.ThemeColor('gitDecoration.modifiedResourceForeground'));
             this.description = 'Current Branch';
+        } else if (contextValue === 'local-branch-head') {
+            this.iconPath = new vscode.ThemeIcon('git-branch', new vscode.ThemeColor('gitDecoration.modifiedResourceForeground'));
+            this.description = '✓';
         } else if (contextValue === 'local-branch') {
-            if (isHead) {
-                this.iconPath = new vscode.ThemeIcon('git-branch', new vscode.ThemeColor('gitDecoration.modifiedResourceForeground'));
-                this.description = '✓';
-            } else {
-                this.iconPath = new vscode.ThemeIcon('git-branch');
-            }
+            this.iconPath = new vscode.ThemeIcon('git-branch');
         } else if (contextValue === 'remote-branch') {
             this.iconPath = new vscode.ThemeIcon('cloud');
         } else if (contextValue === 'folder') {
