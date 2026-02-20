@@ -7,15 +7,13 @@ export function activate(context: vscode.ExtensionContext) {
     const provider = new GitGraphViewProvider(context.extensionUri);
     const branchTreeProvider = new BranchTreeProvider();
 
-    context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider(GitGraphViewProvider.viewType, provider)
-    );
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider(GitGraphViewProvider.viewType, provider));
 
     const branchTreeView = vscode.window.createTreeView('gitPlusBranchView', {
-        treeDataProvider: branchTreeProvider
+        treeDataProvider: branchTreeProvider,
     });
 
-    branchTreeView.onDidChangeSelection(e => {
+    branchTreeView.onDidChangeSelection((e) => {
         const selected = e.selection[0] as BranchTreeItem | undefined;
         if (selected && (selected.contextValue === 'local-branch' || selected.contextValue === 'remote-branch')) {
             provider.filterByBranch(selected.branchName || null);
@@ -29,37 +27,37 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('git-plus.showGraph', () => {
             GitGraphViewProvider.createOrShow(context.extensionUri);
-        })
+        }),
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-plus.editCommitMessage', (commitHash: string) => {
             provider.editCommitMessage(commitHash);
-        })
+        }),
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-plus.cherryPick', (commitHash: string) => {
             provider.cherryPickCommit(commitHash);
-        })
+        }),
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-plus.copyHash', (commitHash: string) => {
             provider.copyCommitHash(commitHash);
-        })
+        }),
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-plus.revertCommit', (commitHash: string) => {
             provider.revertCommit(commitHash);
-        })
+        }),
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-plus.resetToCommit', (commitHash: string) => {
             provider.resetToCommit(commitHash);
-        })
+        }),
     );
 
     context.subscriptions.push(
@@ -79,7 +77,7 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage(`Switched to branch '${branchName}'`);
                 branchTreeProvider.refresh();
             });
-        })
+        }),
     );
 
     context.subscriptions.push(
@@ -87,7 +85,8 @@ export function activate(context: vscode.ExtensionContext) {
             const branchName = branchTreeItem.branchName;
             const confirm = await vscode.window.showWarningMessage(
                 `Are you sure you want to delete branch '${branchName}'?`,
-                'Yes', 'No'
+                'Yes',
+                'No',
             );
 
             if (confirm !== 'Yes') {
@@ -108,13 +107,13 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage(`Deleted branch '${branchName}'`);
                 branchTreeProvider.refresh();
             });
-        })
+        }),
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-plus.refreshBranches', () => {
             branchTreeProvider.refresh();
-        })
+        }),
     );
 
     context.subscriptions.push(
@@ -122,7 +121,9 @@ export function activate(context: vscode.ExtensionContext) {
             const targetBranch = branchTreeItem.branchName;
 
             const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders) { return; }
+            if (!workspaceFolders) {
+                return;
+            }
             const cwd = workspaceFolders[0].uri.fsPath;
 
             cp.execFile('git', ['rebase', targetBranch], { cwd }, (error, _stdout, stderr) => {
@@ -134,7 +135,7 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage(`Rebased onto '${targetBranch}' successfully`);
                 branchTreeProvider.refresh();
             });
-        })
+        }),
     );
 
     context.subscriptions.push(
@@ -142,7 +143,9 @@ export function activate(context: vscode.ExtensionContext) {
             const sourceBranch = branchTreeItem.branchName;
 
             const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders) { return; }
+            if (!workspaceFolders) {
+                return;
+            }
             const cwd = workspaceFolders[0].uri.fsPath;
 
             cp.execFile('git', ['merge', sourceBranch], { cwd }, (error, _stdout, stderr) => {
@@ -153,7 +156,7 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage(`Merged '${sourceBranch}' successfully`);
                 branchTreeProvider.refresh();
             });
-        })
+        }),
     );
 
     context.subscriptions.push(
@@ -163,17 +166,25 @@ export function activate(context: vscode.ExtensionContext) {
             const newBranchName = await vscode.window.showInputBox({
                 prompt: `Create new branch from '${sourceBranch}'`,
                 placeHolder: 'New branch name',
-                validateInput: value => {
-                    if (!value || !value.trim()) { return 'Branch name cannot be empty'; }
-                    if (/[\s~^:?*\[\\]|\.\./.test(value)) { return 'Invalid branch name'; }
+                validateInput: (value) => {
+                    if (!value || !value.trim()) {
+                        return 'Branch name cannot be empty';
+                    }
+                    if (/[\s~^:?*\[\\]|\.\./.test(value)) {
+                        return 'Invalid branch name';
+                    }
                     return null;
-                }
+                },
             });
 
-            if (!newBranchName) { return; }
+            if (!newBranchName) {
+                return;
+            }
 
             const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders) { return; }
+            if (!workspaceFolders) {
+                return;
+            }
 
             const cwd = workspaceFolders[0].uri.fsPath;
             cp.execFile('git', ['checkout', '-b', newBranchName, sourceBranch], { cwd }, (error, _stdout, stderr) => {
@@ -184,7 +195,7 @@ export function activate(context: vscode.ExtensionContext) {
                 vscode.window.showInformationMessage(`Created and switched to branch '${newBranchName}'`);
                 branchTreeProvider.refresh();
             });
-        })
+        }),
     );
 }
 

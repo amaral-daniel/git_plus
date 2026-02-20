@@ -24,7 +24,10 @@ export class GitOperations {
     async getGitLog(filterBranch: string | null): Promise<GitCommit[]> {
         return new Promise((resolve) => {
             const cwd = this.getCwd();
-            if (!cwd) { resolve([]); return; }
+            if (!cwd) {
+                resolve([]);
+                return;
+            }
 
             const branchArg = filterBranch ? ` ${filterBranch}` : '';
             const gitCommand = `git log${branchArg} --pretty=format:"%H|%h|%P|%an|%ai|%D|%s" --date-order`;
@@ -38,18 +41,26 @@ export class GitOperations {
 
                 const commits: GitCommit[] = stdout
                     .split('\n')
-                    .filter(line => line.trim())
-                    .map(line => {
+                    .filter((line) => line.trim())
+                    .map((line) => {
                         const [fullHash, shortHash, parents, author, date, refs, ...messageParts] = line.split('|');
-                        const refList = refs.trim().split(',').map(r => r.trim()).filter(r => r);
+                        const refList = refs
+                            .trim()
+                            .split(',')
+                            .map((r) => r.trim())
+                            .filter((r) => r);
                         return {
                             hash: fullHash.trim(),
                             shortHash: shortHash.trim(),
                             message: messageParts.join('|').trim(),
                             date: new Date(date).toLocaleString(),
                             author: author.trim(),
-                            parents: parents.trim().split(' ').map(p => p.trim()).filter(p => p),
-                            refs: refList
+                            parents: parents
+                                .trim()
+                                .split(' ')
+                                .map((p) => p.trim())
+                                .filter((p) => p),
+                            refs: refList,
                         };
                     });
 
@@ -59,23 +70,39 @@ export class GitOperations {
     }
 
     async editCommitMessage(commitHash: string, newMessage?: string) {
-        if (!newMessage) { return; }
+        if (!newMessage) {
+            return;
+        }
         const cwd = this.getCwd();
-        if (!cwd) { return; }
+        if (!cwd) {
+            return;
+        }
 
-        cp.exec(`git commit --amend ${commitHash}~1..${commitHash} -m "${newMessage.replace(/"/g, '\\"')}"`, { cwd }, (error) => {
-            if (error) { vscode.window.showErrorMessage(`Failed to edit commit message: ${error.message}`); return; }
-            vscode.window.showInformationMessage('Commit message updated successfully');
-            this.onRefresh();
-        });
+        cp.exec(
+            `git commit --amend ${commitHash}~1..${commitHash} -m "${newMessage.replace(/"/g, '\\"')}"`,
+            { cwd },
+            (error) => {
+                if (error) {
+                    vscode.window.showErrorMessage(`Failed to edit commit message: ${error.message}`);
+                    return;
+                }
+                vscode.window.showInformationMessage('Commit message updated successfully');
+                this.onRefresh();
+            },
+        );
     }
 
     async cherryPickCommit(commitHash: string) {
         const cwd = this.getCwd();
-        if (!cwd) { return; }
+        if (!cwd) {
+            return;
+        }
 
         cp.exec(`git cherry-pick ${commitHash}`, { cwd }, (error, _stdout, stderr) => {
-            if (error) { vscode.window.showErrorMessage(`Failed to cherry-pick commit: ${error.message}\n${stderr}`); return; }
+            if (error) {
+                vscode.window.showErrorMessage(`Failed to cherry-pick commit: ${error.message}\n${stderr}`);
+                return;
+            }
             vscode.window.showInformationMessage('Commit cherry-picked successfully');
             this.onRefresh();
         });
@@ -89,15 +116,23 @@ export class GitOperations {
     async revertCommit(commitHash: string) {
         const confirm = await vscode.window.showWarningMessage(
             `Are you sure you want to revert commit ${commitHash.substring(0, 7)}?`,
-            'Yes', 'No'
+            'Yes',
+            'No',
         );
-        if (confirm !== 'Yes') { return; }
+        if (confirm !== 'Yes') {
+            return;
+        }
 
         const cwd = this.getCwd();
-        if (!cwd) { return; }
+        if (!cwd) {
+            return;
+        }
 
         cp.exec(`git revert ${commitHash} --no-edit`, { cwd }, (error, _stdout, stderr) => {
-            if (error) { vscode.window.showErrorMessage(`Failed to revert commit: ${error.message}\n${stderr}`); return; }
+            if (error) {
+                vscode.window.showErrorMessage(`Failed to revert commit: ${error.message}\n${stderr}`);
+                return;
+            }
             vscode.window.showInformationMessage('Commit reverted successfully');
             this.onRefresh();
         });
@@ -108,23 +143,33 @@ export class GitOperations {
             [
                 { label: 'Soft', description: 'Keep changes staged', value: '--soft' },
                 { label: 'Mixed', description: 'Keep changes unstaged', value: '--mixed' },
-                { label: 'Hard', description: 'Discard all changes', value: '--hard' }
+                { label: 'Hard', description: 'Discard all changes', value: '--hard' },
             ],
-            { placeHolder: 'Select reset type' }
+            { placeHolder: 'Select reset type' },
         );
-        if (!resetType) { return; }
+        if (!resetType) {
+            return;
+        }
 
         const confirm = await vscode.window.showWarningMessage(
             `Are you sure you want to reset to commit ${commitHash.substring(0, 7)} (${resetType.label})?`,
-            'Yes', 'No'
+            'Yes',
+            'No',
         );
-        if (confirm !== 'Yes') { return; }
+        if (confirm !== 'Yes') {
+            return;
+        }
 
         const cwd = this.getCwd();
-        if (!cwd) { return; }
+        if (!cwd) {
+            return;
+        }
 
         cp.exec(`git reset ${resetType.value} ${commitHash}`, { cwd }, (error, _stdout, stderr) => {
-            if (error) { vscode.window.showErrorMessage(`Failed to reset: ${error.message}\n${stderr}`); return; }
+            if (error) {
+                vscode.window.showErrorMessage(`Failed to reset: ${error.message}\n${stderr}`);
+                return;
+            }
             vscode.window.showInformationMessage(`Reset to commit ${commitHash.substring(0, 7)} successfully`);
             this.onRefresh();
         });
@@ -137,26 +182,36 @@ export class GitOperations {
         }
 
         const cwd = this.getCwd();
-        if (!cwd) { return; }
+        if (!cwd) {
+            return;
+        }
 
         const newMessage = await vscode.window.showInputBox({
             prompt: `Squash ${hashes.length} commits into one`,
             placeHolder: 'New commit message',
-            validateInput: v => (!v || !v.trim()) ? 'Message cannot be empty' : null
+            validateInput: (v) => (!v || !v.trim() ? 'Message cannot be empty' : null),
         });
-        if (!newMessage) { return; }
+        if (!newMessage) {
+            return;
+        }
 
-        const headHash = await new Promise<string>(resolve => {
+        const headHash = await new Promise<string>((resolve) => {
             cp.exec('git rev-parse HEAD', { cwd }, (err, stdout) => resolve(err ? '' : stdout.trim()));
         });
 
         if (hashes[0] === headHash) {
             // Selection ends at HEAD — simple reset + commit
             const escaped = newMessage.replace(/"/g, '\\"');
-            cp.exec(`git reset --soft ${parentHash}`, { cwd }, error => {
-                if (error) { vscode.window.showErrorMessage(`Failed to squash: ${error.message}`); return; }
-                cp.exec(`git commit -m "${escaped}"`, { cwd }, err2 => {
-                    if (err2) { vscode.window.showErrorMessage(`Failed to commit squash: ${err2.message}`); return; }
+            cp.exec(`git reset --soft ${parentHash}`, { cwd }, (error) => {
+                if (error) {
+                    vscode.window.showErrorMessage(`Failed to squash: ${error.message}`);
+                    return;
+                }
+                cp.exec(`git commit -m "${escaped}"`, { cwd }, (err2) => {
+                    if (err2) {
+                        vscode.window.showErrorMessage(`Failed to commit squash: ${err2.message}`);
+                        return;
+                    }
                     vscode.window.showInformationMessage(`Squashed ${hashes.length} commits successfully`);
                     this.onRefresh();
                 });
@@ -197,12 +252,16 @@ fs.writeFileSync(process.argv[2], ${JSON.stringify(newMessage + '\n')});
             const env = {
                 ...process.env,
                 GIT_SEQUENCE_EDITOR: `node "${seqEditorPath}"`,
-                GIT_EDITOR: `node "${msgEditorPath}"`
+                GIT_EDITOR: `node "${msgEditorPath}"`,
             };
 
             cp.exec(`git rebase -i ${parentHash}`, { cwd, env }, (error, _stdout, stderr) => {
-                try { fs.unlinkSync(seqEditorPath); } catch {}
-                try { fs.unlinkSync(msgEditorPath); } catch {}
+                try {
+                    fs.unlinkSync(seqEditorPath);
+                } catch {}
+                try {
+                    fs.unlinkSync(msgEditorPath);
+                } catch {}
                 if (error) {
                     cp.exec('git rebase --abort', { cwd }, () => {});
                     vscode.window.showErrorMessage(`Failed to squash: ${error.message}\n${stderr}`);
@@ -216,12 +275,17 @@ fs.writeFileSync(process.argv[2], ${JSON.stringify(newMessage + '\n')});
 
     async cherryPickRange(hashes: string[]) {
         const cwd = this.getCwd();
-        if (!cwd) { return; }
+        if (!cwd) {
+            return;
+        }
 
         // hashes are newest-first; cherry-pick oldest to newest
         const ordered = [...hashes].reverse().join(' ');
         cp.exec(`git cherry-pick ${ordered}`, { cwd }, (error, _stdout, stderr) => {
-            if (error) { vscode.window.showErrorMessage(`Failed to cherry-pick: ${error.message}\n${stderr}`); return; }
+            if (error) {
+                vscode.window.showErrorMessage(`Failed to cherry-pick: ${error.message}\n${stderr}`);
+                return;
+            }
             vscode.window.showInformationMessage(`Cherry-picked ${hashes.length} commits successfully`);
             this.onRefresh();
         });
