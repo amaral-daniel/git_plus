@@ -130,7 +130,9 @@
     "bundle-webview": "esbuild src/webview/graph/index.tsx src/webview/commitDetails/index.tsx --bundle --outdir=out/webview --format=iife --target=es2020 --jsx=automatic",
     "watch": "tsc -watch -p ./",
     "watch:webview": "esbuild src/webview/graph/index.tsx src/webview/commitDetails/index.tsx --bundle --outdir=out/webview --format=iife --target=es2020 --jsx=automatic --watch",
-    "pretest": "pnpm run compile"
+    "pretest": "pnpm run compile",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
@@ -138,7 +140,10 @@
     "@types/react-dom": "^19.2.3",
     "@types/vscode": "^1.75.0",
     "esbuild": "^0.27.3",
-    "typescript": "^5.0.0"
+    "eslint": "^9.0.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.0.0"
   },
   "dependencies": {
     "react": "^19.2.4",

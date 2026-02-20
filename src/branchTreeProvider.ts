@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
-import * as path from 'path';
 
 interface Branch {
     name: string;
@@ -83,7 +82,7 @@ export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeIte
             }
 
             const cwd = workspaceFolders[0].uri.fsPath;
-            cp.exec('git rev-parse --abbrev-ref HEAD', { cwd }, (error, stdout, stderr) => {
+            cp.exec('git rev-parse --abbrev-ref HEAD', { cwd }, (error, stdout, _stderr) => {
                 if (error) {
                     resolve(null);
                     return;
@@ -102,7 +101,7 @@ export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeIte
             }
 
             const cwd = workspaceFolders[0].uri.fsPath;
-            cp.exec('git branch -a --format="%(refname:short)|%(HEAD)"', { cwd }, (error, stdout, stderr) => {
+            cp.exec('git branch -a --format="%(refname:short)|%(HEAD)"', { cwd }, (error, stdout, _stderr) => {
                 if (error) {
                     resolve([]);
                     return;
