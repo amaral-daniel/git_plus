@@ -86,6 +86,9 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                     case 'cherryPickRange':
                         provider.cherryPickRange(message.hashes);
                         break;
+                    case 'showCommitDetails':
+                        provider.showCommitDetails(message.commitHash);
+                        break;
                 }
             }
         );
@@ -129,6 +132,9 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                         break;
                     case 'cherryPickRange':
                         this.cherryPickRange(message.hashes);
+                        break;
+                    case 'showCommitDetails':
+                        this.showCommitDetails(message.commitHash);
                         break;
                 }
             }
@@ -378,6 +384,270 @@ fs.writeFileSync(process.argv[2], ${JSON.stringify(newMessage + '\n')});
             vscode.window.showInformationMessage(`Cherry-picked ${hashes.length} commits successfully`);
             this.refresh();
         });
+    }
+
+    public async showCommitDetails(commitHash: string) {
+        const workspaceFolders = vscode.workspace.workspaceFolders;
+        if (!workspaceFolders) { return; }
+        const cwd = workspaceFolders[0].uri.fsPath;
+
+        const metaLines = await new Promise<string[]>((resolve) => {
+            cp.exec(
+                `git log -1 --format="%H%n%ae%n%an%n%aI%n%cI%n%s" ${commitHash}`,
+                { cwd },
+                (err, stdout) => resolve(err ? [] : stdout.split('\n'))
+            );
+        });
+
+        const body = await new Promise<string>((resolve) => {
+            cp.exec(
+                `git log -1 --format="%b" ${commitHash}`,
+                { cwd },
+                (err, stdout) => resolve(err ? '' : stdout.trim())
+            );
+        });
+
+        const patch = await new Promise<string>((resolve) => {
+            cp.exec(
+                `git show ${commitHash}`,
+                { cwd, maxBuffer: 10 * 1024 * 1024 },
+                (err, stdout) => resolve(err ? '' : stdout)
+            );
+        });
+
+        const [fullHash = commitHash, authorEmail = '', authorName = '', authorDate = '', commitDate = '', subject = ''] = metaLines;
+
+        const panel = vscode.window.createWebviewPanel(
+            'gitPlusCommitDetails',
+            `Commit ${commitHash.substring(0, 7)}`,
+            vscode.ViewColumn.One,
+            { enableScripts: true }
+        );
+
+        panel.webview.html = this.getCommitDetailsHtml({ fullHash, authorEmail, authorName, authorDate, commitDate, subject, body, patch });
+    }
+
+    private getCommitDetailsHtml(info: {
+        fullHash: string;
+        authorEmail: string;
+        authorName: string;
+        authorDate: string;
+        commitDate: string;
+        subject: string;
+        body: string;
+        patch: string;
+    }): string {
+        const { fullHash, authorEmail, authorName, authorDate, commitDate, subject, body, patch } = info;
+        const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const formattedAuthorDate = authorDate ? new Date(authorDate).toLocaleString() : '';
+        const formattedCommitDate = commitDate ? new Date(commitDate).toLocaleString() : '';
+        const showCommitDate = formattedCommitDate && formattedCommitDate !== formattedAuthorDate;
+
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commit ${esc(fullHash.substring(0, 7))}</title>
+<style>
+  body {
+    font-family: var(--vscode-font-family);
+    font-size: 13px;
+    color: var(--vscode-foreground);
+    background-color: var(--vscode-editor-background);
+    margin: 0;
+    padding: 20px 24px;
+    line-height: 1.5;
+  }
+  .subject {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+  }
+  .body {
+    color: var(--vscode-descriptionForeground);
+    margin: 0 0 16px 0;
+    white-space: pre-wrap;
+  }
+  .meta {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 4px 8px;
+    margin-bottom: 24px;
+    font-size: 12px;
+  }
+  .meta-label {
+    color: var(--vscode-descriptionForeground);
+    font-weight: 500;
+    text-align: right;
+    padding-top: 1px;
+  }
+  .meta-value { word-break: break-all; }
+  .meta-value.hash {
+    font-family: var(--vscode-editor-font-family);
+    font-size: 11px;
+    color: var(--vscode-textPreformat-foreground);
+  }
+  .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--vscode-descriptionForeground);
+    margin-bottom: 10px;
+  }
+  details {
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+  summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    font-family: var(--vscode-editor-font-family);
+    list-style: none;
+    user-select: none;
+    background-color: var(--vscode-sideBar-background);
+  }
+  summary:hover { background-color: var(--vscode-list-hoverBackground); }
+  summary::-webkit-details-marker { display: none; }
+  .chevron { font-size: 10px; color: var(--vscode-descriptionForeground); transition: transform 0.15s; }
+  details[open] .chevron { transform: rotate(90deg); }
+  .file-name { flex: 1; }
+  .file-stats { font-size: 11px; white-space: nowrap; }
+  .added { color: var(--vscode-gitDecoration-addedResourceForeground); }
+  .removed { color: var(--vscode-gitDecoration-deletedResourceForeground); }
+  pre.diff-content {
+    margin: 0;
+    padding: 8px 0;
+    font-family: var(--vscode-editor-font-family);
+    font-size: 12px;
+    overflow-x: auto;
+    line-height: 1.6;
+    background-color: var(--vscode-editor-background);
+  }
+  .diff-line { display: block; padding: 0 12px; white-space: pre; }
+  .diff-add { background-color: var(--vscode-diffEditor-insertedLineBackground, rgba(70,150,70,0.15)); color: var(--vscode-gitDecoration-addedResourceForeground); }
+  .diff-del { background-color: var(--vscode-diffEditor-removedLineBackground, rgba(150,70,70,0.15)); color: var(--vscode-gitDecoration-deletedResourceForeground); }
+  .diff-hunk { color: var(--vscode-gitDecoration-untrackedResourceForeground); font-weight: 600; }
+  .diff-ctx { color: var(--vscode-foreground); }
+  .no-changes { color: var(--vscode-descriptionForeground); font-size: 12px; padding: 8px 0; }
+  .copyable { cursor: pointer; border-radius: 3px; padding: 1px 3px; margin: -1px -3px; }
+  .copyable:hover { background-color: var(--vscode-list-hoverBackground); }
+  #copy-toast {
+    position: fixed; bottom: 20px; right: 20px;
+    background-color: var(--vscode-editorWidget-background);
+    border: 1px solid var(--vscode-panel-border);
+    color: var(--vscode-foreground);
+    padding: 5px 12px; border-radius: 4px; font-size: 12px;
+    opacity: 0; transition: opacity 0.15s; pointer-events: none;
+  }
+  #copy-toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<p class="subject">${esc(subject)}</p>
+${body ? `<p class="body">${esc(body)}</p>` : ''}
+<div class="meta">
+  <span class="meta-label">Hash</span><code class="meta-value hash copyable" data-copy="${esc(fullHash)}" title="Click to copy">${esc(fullHash)}</code>
+  <span class="meta-label">Author</span><span class="meta-value copyable" data-copy="${esc(authorName + ' <' + authorEmail + '>')}" title="Click to copy">${esc(authorName)} &lt;${esc(authorEmail)}&gt;</span>
+  <span class="meta-label">Date</span><span class="meta-value copyable" data-copy="${esc(formattedAuthorDate)}" title="Click to copy">${esc(formattedAuthorDate)}</span>
+  ${showCommitDate ? `<span class="meta-label">Committed</span><span class="meta-value copyable" data-copy="${esc(formattedCommitDate)}" title="Click to copy">${esc(formattedCommitDate)}</span>` : ''}
+</div>
+<div class="section-title">Changed Files</div>
+<div id="diff-container"><p class="no-changes">No diff available.</p></div>
+<script>
+  const rawPatch = ${JSON.stringify(patch)};
+
+  function escHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function renderDiff(patch) {
+    const container = document.getElementById('diff-container');
+    // Find the start of the first diff block
+    const diffIdx = patch.indexOf('\\ndiff --git ');
+    if (diffIdx < 0) { return; }
+    const diffText = patch.slice(diffIdx + 1);
+
+    // Split into per-file sections
+    const sections = diffText.split(/(?=^diff --git )/m).filter(s => s.trim());
+    if (!sections.length) { return; }
+
+    container.innerHTML = '';
+
+    sections.forEach(section => {
+      const lines = section.split('\\n');
+
+      // Extract file path from "diff --git a/... b/..."
+      const headerMatch = lines[0].match(/^diff --git a\\/(.*?) b\\/(.*)$/);
+      const filePath = headerMatch ? headerMatch[2] : lines[0];
+
+      // Count added/removed lines
+      let added = 0, removed = 0;
+      lines.forEach(line => {
+        if (line.startsWith('+') && !line.startsWith('+++')) { added++; }
+        if (line.startsWith('-') && !line.startsWith('---')) { removed++; }
+      });
+
+      const details = document.createElement('details');
+      details.open = true;
+
+      const summary = document.createElement('summary');
+      summary.innerHTML =
+        '<span class="chevron">&#9658;</span>' +
+        '<span class="file-name">' + escHtml(filePath) + '</span>' +
+        '<span class="file-stats">' +
+          (added ? '<span class="added">+' + added + '</span> ' : '') +
+          (removed ? '<span class="removed">-' + removed + '</span>' : '') +
+        '</span>';
+
+      const pre = document.createElement('pre');
+      pre.className = 'diff-content';
+
+      let inHunk = false;
+      const rendered = lines.map(line => {
+        if (line.startsWith('@@')) {
+          inHunk = true;
+          return '<span class="diff-line diff-hunk">' + escHtml(line) + '</span>';
+        }
+        if (!inHunk) { return null; }
+        if (line.startsWith('+')) { return '<span class="diff-line diff-add">' + escHtml(line) + '</span>'; }
+        if (line.startsWith('-')) { return '<span class="diff-line diff-del">' + escHtml(line) + '</span>'; }
+        return '<span class="diff-line diff-ctx">' + escHtml(line) + '</span>';
+      }).filter(l => l !== null).join('\\n');
+
+      pre.innerHTML = rendered;
+      details.appendChild(summary);
+      details.appendChild(pre);
+      container.appendChild(details);
+    });
+  }
+
+  renderDiff(rawPatch);
+
+  // Copy-to-clipboard for meta values
+  const toast = document.getElementById('copy-toast');
+  let toastTimer;
+  document.querySelector('.meta').addEventListener('click', e => {
+    const el = e.target.closest('.copyable');
+    if (!el) { return; }
+    navigator.clipboard.writeText(el.dataset.copy).then(() => {
+      toast.textContent = 'Copied!';
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 1500);
+    });
+  });
+</script>
+<div id="copy-toast"></div>
+</body>
+</html>`;
     }
 
     private async updateWebview(webview: vscode.Webview) {
@@ -656,6 +926,8 @@ fs.writeFileSync(process.argv[2], ${JSON.stringify(newMessage + '\n')});
             </table>
         </div>
         <div id="context-menu" class="context-menu">
+            <div class="context-menu-item" data-action="showCommitDetails">Show more details</div>
+            <div class="context-menu-separator"></div>
             <div class="context-menu-item" data-action="copyHash">Copy Hash</div>
             <div class="context-menu-separator"></div>
             <div class="context-menu-item" data-action="cherryPick">Cherry Pick</div>
