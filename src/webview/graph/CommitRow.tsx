@@ -1,16 +1,16 @@
 import React, { useRef, useEffect } from 'react';
 import { GitCommit } from '../types';
+import { RowGraphData } from './graphRenderer';
 import { GraphCanvas } from './GraphCanvas';
 
 interface Props {
     commit: GitCommit;
-    index: number;
-    commits: GitCommit[];
-    commitLanes: Map<string, number>;
+    lane: number;
     canvasWidth: number;
     headCommitHash: string | undefined;
     isSelected: boolean;
     isEditing: boolean;
+    rowGraphData: RowGraphData;
     onClick: (shiftKey: boolean) => void;
     onContextMenu: (e: React.MouseEvent) => void;
     onEditConfirm: (newMessage: string) => void;
@@ -44,8 +44,8 @@ function RefBadges({ refs }: { refs: string[] }) {
 }
 
 export const CommitRow = React.memo(function CommitRow({
-    commit, index, commits, commitLanes, canvasWidth, headCommitHash,
-    isSelected, isEditing, onClick, onContextMenu, onEditConfirm, onEditCancel,
+    commit, lane, canvasWidth, headCommitHash,
+    isSelected, isEditing, rowGraphData, onClick, onContextMenu, onEditConfirm, onEditCancel,
 }: Props) {
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -62,12 +62,10 @@ export const CommitRow = React.memo(function CommitRow({
         >
             <td className="graph-cell">
                 <GraphCanvas
-                    commit={commit}
-                    index={index}
-                    commits={commits}
-                    commitLanes={commitLanes}
+                    lane={lane}
                     canvasWidth={canvasWidth}
-                    headCommitHash={headCommitHash}
+                    isHead={commit.hash === headCommitHash}
+                    rowGraphData={rowGraphData}
                 />
             </td>
             <td className="message-cell" title={commit.message}>

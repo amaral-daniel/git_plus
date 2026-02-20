@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { GitCommit } from '../types';
 import { vscode } from '../vscodeApi';
-import { areCommitsConsecutive, calculateLanes } from './graphRenderer';
+import { areCommitsConsecutive, calculateLanes, calculateRowGraphData } from './graphRenderer';
 import { CommitRow } from './CommitRow';
 
 const LANE_WIDTH = 18;
@@ -21,6 +21,7 @@ export function GraphView({ commits }: Props) {
     const [editingHash, setEditingHash] = useState<string | null>(null);
 
     const commitLanes = useMemo(() => calculateLanes(commits), [commits]);
+    const rowGraphData = useMemo(() => calculateRowGraphData(commits, commitLanes), [commits, commitLanes]);
     const maxLane = useMemo(
         () => commits.length > 0 ? Math.max(...Array.from(commitLanes.values())) + 1 : 1,
         [commitLanes, commits]
@@ -107,13 +108,12 @@ export function GraphView({ commits }: Props) {
                             <CommitRow
                                 key={commit.hash}
                                 commit={commit}
-                                index={index}
-                                commits={commits}
-                                commitLanes={commitLanes}
+                                lane={commitLanes.get(commit.hash) ?? 0}
                                 canvasWidth={canvasWidth}
                                 headCommitHash={headCommitHash}
                                 isSelected={selectedIndices.has(index)}
                                 isEditing={editingHash === commit.hash}
+                                rowGraphData={rowGraphData[index]}
                                 onClick={(shiftKey) => handleRowClick(index, shiftKey)}
                                 onContextMenu={(e) => handleContextMenu(e, index)}
                                 onEditConfirm={(msg) => handleEditConfirm(commit.hash, msg)}
