@@ -1,8 +1,8 @@
-# Git Plus
+# Git Lean
 
 A minimalist Git extension for Visual Studio Code.
 
-Built out of frustration with the existing options: bloated UIs, cluttered panels, and features I never use. Git Plus does less, on purpose.
+Built out of frustration with the existing options: bloated UIs, cluttered panels, and features I never use. Git Lean does less, on purpose.
 
 ---
 
@@ -18,6 +18,8 @@ A clean sidebar panel listing all local and remote branches.
   - Checkout
   - Delete
   - Create new branch from here
+  - Rebase current branch onto this
+  - Merge into current branch
 
 ### Commit Tree
 
@@ -27,12 +29,17 @@ A canvas-rendered git graph that visualises the commit history of your repositor
 - Ref badges inline with each commit (HEAD, local branches, remotes, tags)
 - The HEAD commit is rendered with a distinct ring marker
 - Selecting a branch in the panel filters the tree to that branch's history
-- **Right-click** any commit to:
+- **Click** a commit to select it; **Shift-click** to select a range
+- **Right-click** a single commit to:
+  - Show full commit details (diff, author, dates)
   - Copy hash
   - Cherry-pick
   - Revert
-  - Reset (soft / mixed / hard)
-  - Edit commit message
+  - Reset to commit
+  - Edit commit message inline
+- **Right-click** a range of commits to:
+  - Squash (when consecutive)
+  - Cherry-pick range
 
 ---
 
@@ -45,12 +52,13 @@ pnpm install
 pnpm run compile
 ```
 
-Then open the project in VS Code and press `F5`. This launches an Extension Development Host: a second VS Code window with the extension loaded. Open any git repository in that window and the **Git Plus** panel will appear in the sidebar.
+Then open the project in VS Code and press `F5`. This launches an Extension Development Host: a second VS Code window with the extension loaded. Open any git repository in that window and the **Git Lean** panel will appear in the sidebar.
 
 To watch for changes during development:
 
 ```bash
-pnpm run watch
+pnpm run watch        # TypeScript
+pnpm run watch:webview  # React webview
 ```
 
 ---
@@ -63,4 +71,4 @@ Most Git GUIs for VS Code are either too heavy or too opinionated. I wanted some
 
 ## Tech
 
-Built with the [VS Code Extension API](https://code.visualstudio.com/api), TypeScript, and the Canvas API for graph rendering. No external runtime dependencies.
+Built with the [VS Code Extension API](https://code.visualstudio.com/api), TypeScript, React 19, and the Canvas API for graph rendering. No external runtime dependencies.
