@@ -160,7 +160,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
         if (!cwd) { return; }
 
         const exec = (cmd: string, opts?: cp.ExecOptions) => new Promise<string>((resolve) => {
-            cp.exec(cmd, { cwd, ...opts }, (err: Error | null, stdout: string) => resolve(err ? '' : stdout));
+            cp.exec(cmd, { cwd, ...opts }, (_err, stdout) => resolve(stdout ? String(stdout) : ''));
         });
 
         const metaLines = (await exec(`git log -1 --format="%H%n%ae%n%an%n%aI%n%cI%n%s" ${commitHash}`)).split('\n');
@@ -176,11 +176,12 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             { enableScripts: true }
         );
 
-        panel.webview.html = getCommitDetailsHtml({ fullHash, authorEmail, authorName, authorDate, commitDate, subject, body, patch });
+        panel.webview.options = { enableScripts: true, localResourceRoots: [this._extensionUri] };
+        panel.webview.html = getCommitDetailsHtml(panel.webview, { fullHash, authorEmail, authorName, authorDate, commitDate, subject, body, patch }, this._extensionUri);
     }
 
     private async updateWebview(webview: vscode.Webview) {
         const commits = await this._gitOps.getGitLog(this._filterBranch);
-        webview.html = getHtmlForWebview(webview, commits);
+        webview.html = getHtmlForWebview(webview, commits, this._extensionUri);
     }
 }

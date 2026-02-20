@@ -125,14 +125,23 @@
   },
   "packageManager": "pnpm@10.30.0",
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
+    "vscode:prepublish": "pnpm run compile",
+    "compile": "tsc -p ./ && pnpm run bundle-webview",
+    "bundle-webview": "esbuild src/webview/graph/index.tsx src/webview/commitDetails/index.tsx --bundle --outdir=out/webview --format=iife --target=es2020 --jsx=automatic",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile"
+    "watch:webview": "esbuild src/webview/graph/index.tsx src/webview/commitDetails/index.tsx --bundle --outdir=out/webview --format=iife --target=es2020 --jsx=automatic --watch",
+    "pretest": "pnpm run compile"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@types/vscode": "^1.75.0",
+    "esbuild": "^0.27.3",
     "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
   }
 }
