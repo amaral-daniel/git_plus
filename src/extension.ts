@@ -71,7 +71,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
 
             const cwd = workspaceFolders[0].uri.fsPath;
-            cp.exec(`git checkout ${branchName}`, { cwd }, (error, _stdout, _stderr) => {
+            cp.execFile('git', ['checkout', branchName], { cwd }, (error, _stdout, _stderr) => {
                 if (error) {
                     vscode.window.showErrorMessage(`Failed to checkout branch: ${error.message}`);
                     return;
@@ -100,7 +100,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
 
             const cwd = workspaceFolders[0].uri.fsPath;
-            cp.exec(`git branch -d ${branchName}`, { cwd }, (error, _stdout, stderr) => {
+            cp.execFile('git', ['branch', '-d', branchName], { cwd }, (error, _stdout, stderr) => {
                 if (error) {
                     vscode.window.showErrorMessage(`Failed to delete branch: ${error.message}\n${stderr}`);
                     return;
@@ -125,9 +125,9 @@ export function activate(context: vscode.ExtensionContext) {
             if (!workspaceFolders) { return; }
             const cwd = workspaceFolders[0].uri.fsPath;
 
-            cp.exec(`git rebase ${targetBranch}`, { cwd }, (error, _stdout, stderr) => {
+            cp.execFile('git', ['rebase', targetBranch], { cwd }, (error, _stdout, stderr) => {
                 if (error) {
-                    cp.exec('git rebase --abort', { cwd }, () => {});
+                    cp.execFile('git', ['rebase', '--abort'], { cwd }, () => {});
                     vscode.window.showErrorMessage(`Rebase failed: ${stderr || error.message}`);
                     return;
                 }
@@ -145,7 +145,7 @@ export function activate(context: vscode.ExtensionContext) {
             if (!workspaceFolders) { return; }
             const cwd = workspaceFolders[0].uri.fsPath;
 
-            cp.exec(`git merge ${sourceBranch}`, { cwd }, (error, _stdout, stderr) => {
+            cp.execFile('git', ['merge', sourceBranch], { cwd }, (error, _stdout, stderr) => {
                 if (error) {
                     vscode.window.showErrorMessage(`Merge failed: ${stderr || error.message}`);
                     return;
@@ -176,7 +176,7 @@ export function activate(context: vscode.ExtensionContext) {
             if (!workspaceFolders) { return; }
 
             const cwd = workspaceFolders[0].uri.fsPath;
-            cp.exec(`git checkout -b ${newBranchName} ${sourceBranch}`, { cwd }, (error, _stdout, stderr) => {
+            cp.execFile('git', ['checkout', '-b', newBranchName, sourceBranch], { cwd }, (error, _stdout, stderr) => {
                 if (error) {
                     vscode.window.showErrorMessage(`Failed to create branch: ${stderr || error.message}`);
                     return;
