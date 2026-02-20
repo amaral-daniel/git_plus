@@ -244,8 +244,8 @@ fs.writeFileSync(process.argv[2], ${JSON.stringify(newMessage + '\n')});
 `;
 
             const tmpDir = os.tmpdir();
-            const seqEditorPath = path.join(tmpDir, 'git-plus-seq-editor.js');
-            const msgEditorPath = path.join(tmpDir, 'git-plus-msg-editor.js');
+            const seqEditorPath = path.join(tmpDir, 'git-lean-seq-editor.js');
+            const msgEditorPath = path.join(tmpDir, 'git-lean-msg-editor.js');
             fs.writeFileSync(seqEditorPath, seqEditorScript);
             fs.writeFileSync(msgEditorPath, msgEditorScript);
 

@@ -1,6 +1,6 @@
 {
-  "name": "git-plus",
-  "displayName": "Git Plus",
+  "name": "git-lean",
+  "displayName": "Git Lean",
   "description": "A minimalist git extension for VSCode",
   "version": "0.0.1",
   "engines": {
@@ -14,21 +14,21 @@
     "viewsContainers": {
       "panel": [
         {
-          "id": "git-plus",
-          "title": "Git Plus",
+          "id": "git-lean",
+          "title": "Git Lean",
           "icon": "$(git-branch)"
         }
       ]
     },
     "views": {
-      "git-plus": [
+      "git-lean": [
         {
-          "id": "gitPlusBranchView",
+          "id": "gitLeanBranchView",
           "name": "Branches",
           "type": "tree"
         },
         {
-          "id": "gitPlusGraphView",
+          "id": "gitLeanGraphView",
           "name": "Tree",
           "type": "webview"
         }
@@ -37,88 +37,88 @@
     "menus": {
       "view/title": [
         {
-          "command": "git-plus.refreshBranches",
-          "when": "view == gitPlusBranchView",
+          "command": "git-lean.refreshBranches",
+          "when": "view == gitLeanBranchView",
           "group": "navigation"
         }
       ],
       "view/item/context": [
         {
-          "command": "git-plus.checkoutBranch",
-          "when": "view == gitPlusBranchView && viewItem == local-branch"
+          "command": "git-lean.checkoutBranch",
+          "when": "view == gitLeanBranchView && viewItem == local-branch"
         },
         {
-          "command": "git-plus.deleteBranch",
-          "when": "view == gitPlusBranchView && viewItem == local-branch"
+          "command": "git-lean.deleteBranch",
+          "when": "view == gitLeanBranchView && viewItem == local-branch"
         },
         {
-          "command": "git-plus.createBranch",
-          "when": "view == gitPlusBranchView && (viewItem == local-branch || viewItem == local-branch-head || viewItem == remote-branch)"
+          "command": "git-lean.createBranch",
+          "when": "view == gitLeanBranchView && (viewItem == local-branch || viewItem == local-branch-head || viewItem == remote-branch)"
         },
         {
-          "command": "git-plus.rebaseBranch",
-          "when": "view == gitPlusBranchView && (viewItem == local-branch || viewItem == remote-branch)"
+          "command": "git-lean.rebaseBranch",
+          "when": "view == gitLeanBranchView && (viewItem == local-branch || viewItem == remote-branch)"
         },
         {
-          "command": "git-plus.mergeBranch",
-          "when": "view == gitPlusBranchView && (viewItem == local-branch || viewItem == remote-branch)"
+          "command": "git-lean.mergeBranch",
+          "when": "view == gitLeanBranchView && (viewItem == local-branch || viewItem == remote-branch)"
         }
       ]
     },
     "commands": [
       {
-        "command": "git-plus.showGraph",
-        "title": "Git Plus: Show Graph",
-        "category": "Git Plus"
+        "command": "git-lean.showGraph",
+        "title": "Git Lean: Show Graph",
+        "category": "Git Lean"
       },
       {
-        "command": "git-plus.editCommitMessage",
-        "title": "Git Plus: Edit Commit Message",
-        "category": "Git Plus"
+        "command": "git-lean.editCommitMessage",
+        "title": "Git Lean: Edit Commit Message",
+        "category": "Git Lean"
       },
       {
-        "command": "git-plus.cherryPick",
-        "title": "Git Plus: Cherry Pick",
-        "category": "Git Plus"
+        "command": "git-lean.cherryPick",
+        "title": "Git Lean: Cherry Pick",
+        "category": "Git Lean"
       },
       {
-        "command": "git-plus.copyHash",
-        "title": "Git Plus: Copy Hash",
-        "category": "Git Plus"
+        "command": "git-lean.copyHash",
+        "title": "Git Lean: Copy Hash",
+        "category": "Git Lean"
       },
       {
-        "command": "git-plus.revertCommit",
-        "title": "Git Plus: Revert Commit",
-        "category": "Git Plus"
+        "command": "git-lean.revertCommit",
+        "title": "Git Lean: Revert Commit",
+        "category": "Git Lean"
       },
       {
-        "command": "git-plus.resetToCommit",
-        "title": "Git Plus: Reset to Commit",
-        "category": "Git Plus"
+        "command": "git-lean.resetToCommit",
+        "title": "Git Lean: Reset to Commit",
+        "category": "Git Lean"
       },
       {
-        "command": "git-plus.checkoutBranch",
+        "command": "git-lean.checkoutBranch",
         "title": "Checkout Branch"
       },
       {
-        "command": "git-plus.deleteBranch",
+        "command": "git-lean.deleteBranch",
         "title": "Delete Branch"
       },
       {
-        "command": "git-plus.refreshBranches",
+        "command": "git-lean.refreshBranches",
         "title": "Refresh Branches",
         "icon": "$(refresh)"
       },
       {
-        "command": "git-plus.createBranch",
+        "command": "git-lean.createBranch",
         "title": "Create New Branch Here"
       },
       {
-        "command": "git-plus.rebaseBranch",
+        "command": "git-lean.rebaseBranch",
         "title": "Rebase Current Branch onto This"
       },
       {
-        "command": "git-plus.mergeBranch",
+        "command": "git-lean.mergeBranch",
         "title": "Merge Branch into Current"
       }
     ]

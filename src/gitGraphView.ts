@@ -4,7 +4,7 @@ import { GitOperations } from './gitOperations';
 import { getHtmlForWebview, getCommitDetailsHtml } from './webviewContent';
 
 export class GitGraphViewProvider implements vscode.WebviewViewProvider {
-    public static readonly viewType = 'gitPlusGraphView';
+    public static readonly viewType = 'gitLeanGraphView';
     private static currentPanel: vscode.WebviewPanel | undefined;
     private _view?: vscode.WebviewView;
     private _watcher?: vscode.FileSystemWatcher;
@@ -178,7 +178,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
         ] = metaLines;
 
         const panel = vscode.window.createWebviewPanel(
-            'gitPlusCommitDetails',
+            'gitLeanCommitDetails',
             `Commit ${commitHash.substring(0, 7)}`,
             vscode.ViewColumn.One,
             { enableScripts: true },

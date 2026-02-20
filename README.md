@@ -15,11 +15,11 @@ A clean sidebar panel listing all local and remote branches.
 - The currently checked-out branch is highlighted with a distinct icon and a `✓` marker
 - **Click** a branch to filter the commit tree to its history
 - **Right-click** a branch to access branch actions:
-    - Checkout
-    - Delete
-    - Create new branch from here
-    - Rebase current branch onto this
-    - Merge into current branch
+  - Checkout
+  - Delete
+  - Create new branch from here
+  - Rebase current branch onto this
+  - Merge into current branch
 
 ### Commit Tree
 
@@ -31,15 +31,15 @@ A canvas-rendered git graph that visualises the commit history of your repositor
 - Selecting a branch in the panel filters the tree to that branch's history
 - **Click** a commit to select it; **Shift-click** to select a range
 - **Right-click** a single commit to:
-    - Show full commit details (diff, author, dates)
-    - Copy hash
-    - Cherry-pick
-    - Revert
-    - Reset to commit
-    - Edit commit message inline
+  - Show full commit details (diff, author, dates)
+  - Copy hash
+  - Cherry-pick
+  - Revert
+  - Reset to commit
+  - Edit commit message inline
 - **Right-click** a range of commits to:
-    - Squash (when consecutive)
-    - Cherry-pick range
+  - Squash (when consecutive)
+  - Cherry-pick range
 
 ---
 
@@ -67,7 +67,7 @@ pnpm run watch:webview  # React webview
 
 Most Git GUIs for VS Code are either too heavy or too opinionated. I wanted something that stays out of the way — no tabs, no toolbars, no settings pages. Just the branch list and the graph, side by side.
 
-The final straw was multi-commit operations. Squashing a range of commits directly from the graph — without dropping to the terminal — isn't available in Git Graph, isn't in the VS Code built-in, and appears to be locked behind GitLens Pro. That felt like a gap worth filling.
+The final straw was multi-commit operations. Squashing a range of commits directly from the graph (without dropping to the terminal) isn't available in Git Graph, isn't in the VS Code built-in, and appears to be locked behind GitLens Pro. That felt like a gap worth filling.
 
 ---
 

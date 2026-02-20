@@ -9,7 +9,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(vscode.window.registerWebviewViewProvider(GitGraphViewProvider.viewType, provider));
 
-    const branchTreeView = vscode.window.createTreeView('gitPlusBranchView', {
+    const branchTreeView = vscode.window.createTreeView('gitLeanBranchView', {
         treeDataProvider: branchTreeProvider,
     });
 
@@ -25,43 +25,43 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(branchTreeView);
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-plus.showGraph', () => {
+        vscode.commands.registerCommand('git-lean.showGraph', () => {
             GitGraphViewProvider.createOrShow(context.extensionUri);
         }),
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-plus.editCommitMessage', (commitHash: string) => {
+        vscode.commands.registerCommand('git-lean.editCommitMessage', (commitHash: string) => {
             provider.editCommitMessage(commitHash);
         }),
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-plus.cherryPick', (commitHash: string) => {
+        vscode.commands.registerCommand('git-lean.cherryPick', (commitHash: string) => {
             provider.cherryPickCommit(commitHash);
         }),
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-plus.copyHash', (commitHash: string) => {
+        vscode.commands.registerCommand('git-lean.copyHash', (commitHash: string) => {
             provider.copyCommitHash(commitHash);
         }),
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-plus.revertCommit', (commitHash: string) => {
+        vscode.commands.registerCommand('git-lean.revertCommit', (commitHash: string) => {
             provider.revertCommit(commitHash);
         }),
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-plus.resetToCommit', (commitHash: string) => {
+        vscode.commands.registerCommand('git-lean.resetToCommit', (commitHash: string) => {
             provider.resetToCommit(commitHash);
         }),
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-plus.checkoutBranch', async (item: any) => {
+        vscode.commands.registerCommand('git-lean.checkoutBranch', async (item: any) => {
             const branchName = typeof item === 'string' ? item : item.branchName;
             const workspaceFolders = vscode.workspace.workspaceFolders;
             if (!workspaceFolders) {
@@ -81,7 +81,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-plus.deleteBranch', async (branchTreeItem: any) => {
+        vscode.commands.registerCommand('git-lean.deleteBranch', async (branchTreeItem: any) => {
             const branchName = branchTreeItem.branchName;
             const confirm = await vscode.window.showWarningMessage(
                 `Are you sure you want to delete branch '${branchName}'?`,
@@ -111,13 +111,13 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-plus.refreshBranches', () => {
+        vscode.commands.registerCommand('git-lean.refreshBranches', () => {
             branchTreeProvider.refresh();
         }),
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-plus.rebaseBranch', async (branchTreeItem: any) => {
+        vscode.commands.registerCommand('git-lean.rebaseBranch', async (branchTreeItem: any) => {
             const targetBranch = branchTreeItem.branchName;
 
             const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -139,7 +139,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-plus.mergeBranch', async (branchTreeItem: any) => {
+        vscode.commands.registerCommand('git-lean.mergeBranch', async (branchTreeItem: any) => {
             const sourceBranch = branchTreeItem.branchName;
 
             const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -160,7 +160,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-plus.createBranch', async (branchTreeItem: any) => {
+        vscode.commands.registerCommand('git-lean.createBranch', async (branchTreeItem: any) => {
             const sourceBranch = branchTreeItem.branchName;
 
             const newBranchName = await vscode.window.showInputBox({
