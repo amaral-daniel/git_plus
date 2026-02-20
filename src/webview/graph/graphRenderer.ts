@@ -35,7 +35,9 @@ export function calculateLanes(commits: GitCommit[]): Map<string, number> {
                 if (!reservedLanes.has(parent)) {
                     const usedLanes = new Set(reservedLanes.values());
                     let newLane = 0;
-                    while (usedLanes.has(newLane)) { newLane++; }
+                    while (usedLanes.has(newLane)) {
+                        newLane++;
+                    }
                     reservedLanes.set(parent, newLane);
                     nextLane = Math.max(nextLane, newLane + 1);
                 }
@@ -48,12 +50,11 @@ export function calculateLanes(commits: GitCommit[]): Map<string, number> {
 
 // Precomputes all per-row rendering data in a single O(n * avg_connections) pass,
 // eliminating the O(n²) work previously done inside each GraphCanvas useEffect.
-export function calculateRowGraphData(
-    commits: GitCommit[],
-    commitLanes: Map<string, number>,
-): RowGraphData[] {
+export function calculateRowGraphData(commits: GitCommit[], commitLanes: Map<string, number>): RowGraphData[] {
     const n = commits.length;
-    if (n === 0) { return []; }
+    if (n === 0) {
+        return [];
+    }
 
     const commitIndex = new Map<string, number>();
     commits.forEach((c, i) => commitIndex.set(c.hash, i));
@@ -63,7 +64,10 @@ export function calculateRowGraphData(
     for (let i = 0; i < n; i++) {
         for (const parent of commits[i].parents) {
             let arr = childMap.get(parent);
-            if (!arr) { arr = []; childMap.set(parent, arr); }
+            if (!arr) {
+                arr = [];
+                childMap.set(parent, arr);
+            }
             arr.push(i);
         }
     }
@@ -82,11 +86,13 @@ export function calculateRowGraphData(
         const lane = commitLanes.get(commit.hash)!;
 
         // hasIncoming: any child commit above (index < i) connects to this commit
-        rows[i].hasIncoming = (childMap.get(commit.hash) ?? []).some(j => j < i);
+        rows[i].hasIncoming = (childMap.get(commit.hash) ?? []).some((j) => j < i);
 
         for (const parent of commit.parents) {
             const j = commitIndex.get(parent);
-            if (j === undefined || j <= i) { continue; }
+            if (j === undefined || j <= i) {
+                continue;
+            }
 
             rows[i].hasOutgoing = true;
             const parentLane = commitLanes.get(parent)!;
@@ -107,7 +113,7 @@ export function calculateRowGraphData(
     // Finalise passthrough lanes, excluding each row's own commit lane
     for (let r = 0; r < n; r++) {
         const commitLane = commitLanes.get(commits[r].hash)!;
-        rows[r].passthroughLanes = Array.from(passthroughSets[r]).filter(l => l !== commitLane);
+        rows[r].passthroughLanes = Array.from(passthroughSets[r]).filter((l) => l !== commitLane);
     }
 
     return rows;

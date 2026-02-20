@@ -2,8 +2,16 @@ import React, { useEffect, useRef } from 'react';
 import { RowGraphData } from './graphRenderer';
 
 const COLORS = [
-    '#e8832a', '#3d9fd4', '#4faa5e', '#c75dd3', '#e05c5c',
-    '#1abc9c', '#9b59b6', '#e8b84b', '#16a085', '#d35400',
+    '#e8832a',
+    '#3d9fd4',
+    '#4faa5e',
+    '#c75dd3',
+    '#e05c5c',
+    '#1abc9c',
+    '#9b59b6',
+    '#e8b84b',
+    '#16a085',
+    '#d35400',
 ];
 const LANE_WIDTH = 18;
 const ROW_HEIGHT = 28;
@@ -20,14 +28,14 @@ interface Props {
     rowGraphData: RowGraphData;
 }
 
-export const GraphCanvas = React.memo(function GraphCanvas({
-    lane, canvasWidth, isHead, rowGraphData,
-}: Props) {
+export const GraphCanvas = React.memo(function GraphCanvas({ lane, canvasWidth, isHead, rowGraphData }: Props) {
     const ref = useRef<HTMLCanvasElement>(null);
 
     useEffect(() => {
         const canvas = ref.current;
-        if (!canvas) { return; }
+        if (!canvas) {
+            return;
+        }
 
         const dpr = window.devicePixelRatio || 1;
         canvas.width = canvasWidth * dpr;
@@ -56,10 +64,16 @@ export const GraphCanvas = React.memo(function GraphCanvas({
         ctx.strokeStyle = color;
         ctx.lineWidth = LINE_WIDTH;
         if (rowGraphData.hasIncoming) {
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, y); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, y);
+            ctx.stroke();
         }
         if (rowGraphData.hasOutgoing) {
-            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, ROW_HEIGHT); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(x, ROW_HEIGHT);
+            ctx.stroke();
         }
 
         // 3. Merge/branch bezier connections (precomputed)
@@ -84,21 +98,28 @@ export const GraphCanvas = React.memo(function GraphCanvas({
         const dotX = Math.round(lane * LANE_WIDTH + 10);
         const dotY = Math.round(y);
         if (isHead) {
-            ctx.clearRect(dotX - COMMIT_RADIUS - 1, dotY - COMMIT_RADIUS - 1, (COMMIT_RADIUS + 1) * 2, (COMMIT_RADIUS + 1) * 2);
-            ctx.strokeStyle = color; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.arc(dotX, dotY, COMMIT_RADIUS, 0, 2 * Math.PI); ctx.stroke();
+            ctx.clearRect(
+                dotX - COMMIT_RADIUS - 1,
+                dotY - COMMIT_RADIUS - 1,
+                (COMMIT_RADIUS + 1) * 2,
+                (COMMIT_RADIUS + 1) * 2,
+            );
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(dotX, dotY, COMMIT_RADIUS, 0, 2 * Math.PI);
+            ctx.stroke();
             ctx.fillStyle = color;
-            ctx.beginPath(); ctx.arc(dotX, dotY, 2, 0, 2 * Math.PI); ctx.fill();
+            ctx.beginPath();
+            ctx.arc(dotX, dotY, 2, 0, 2 * Math.PI);
+            ctx.fill();
         } else {
             ctx.fillStyle = color;
-            ctx.beginPath(); ctx.arc(dotX, dotY, COMMIT_RADIUS, 0, 2 * Math.PI); ctx.fill();
+            ctx.beginPath();
+            ctx.arc(dotX, dotY, COMMIT_RADIUS, 0, 2 * Math.PI);
+            ctx.fill();
         }
     }, [lane, canvasWidth, isHead, rowGraphData]);
 
-    return (
-        <canvas
-            ref={ref}
-            style={{ display: 'block', width: canvasWidth, height: ROW_HEIGHT }}
-        />
-    );
+    return <canvas ref={ref} style={{ display: 'block', width: canvasWidth, height: ROW_HEIGHT }} />;
 });

@@ -22,9 +22,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
     }
 
     public static createOrShow(extensionUri: vscode.Uri) {
-        const column = vscode.window.activeTextEditor
-            ? vscode.window.activeTextEditor.viewColumn
-            : undefined;
+        const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
         if (GitGraphViewProvider.currentPanel) {
             GitGraphViewProvider.currentPanel.reveal(column);
@@ -37,8 +35,8 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             column || vscode.ViewColumn.One,
             {
                 enableScripts: true,
-                localResourceRoots: [extensionUri]
-            }
+                localResourceRoots: [extensionUri],
+            },
         );
 
         GitGraphViewProvider.currentPanel = panel;
@@ -50,25 +48,25 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             GitGraphViewProvider.currentPanel = undefined;
         });
 
-        panel.webview.onDidReceiveMessage(
-            message => provider.handleMessage(message, () => provider.updateWebview(panel.webview))
+        panel.webview.onDidReceiveMessage((message) =>
+            provider.handleMessage(message, () => provider.updateWebview(panel.webview)),
         );
     }
 
     public resolveWebviewView(
         webviewView: vscode.WebviewView,
         _context: vscode.WebviewViewResolveContext,
-        _token: vscode.CancellationToken
+        _token: vscode.CancellationToken,
     ) {
         this._view = webviewView;
 
         webviewView.webview.options = {
             enableScripts: true,
-            localResourceRoots: [this._extensionUri]
+            localResourceRoots: [this._extensionUri],
         };
 
-        webviewView.webview.onDidReceiveMessage(
-            message => this.handleMessage(message, () => this.updateWebview(webviewView.webview))
+        webviewView.webview.onDidReceiveMessage((message) =>
+            this.handleMessage(message, () => this.updateWebview(webviewView.webview)),
         );
 
         this.updateWebview(webviewView.webview);
@@ -113,7 +111,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
         }
 
         this._watcher = vscode.workspace.createFileSystemWatcher(
-            new vscode.RelativePattern(workspaceFolders[0], '.git/**')
+            new vscode.RelativePattern(workspaceFolders[0], '.git/**'),
         );
 
         this._watcher.onDidChange(() => this.refresh());
@@ -157,27 +155,41 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 
     public async showCommitDetails(commitHash: string) {
         const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-        if (!cwd) { return; }
+        if (!cwd) {
+            return;
+        }
 
-        const exec = (cmd: string, opts?: cp.ExecOptions) => new Promise<string>((resolve) => {
-            cp.exec(cmd, { cwd, ...opts }, (_err, stdout) => resolve(stdout ? String(stdout) : ''));
-        });
+        const exec = (cmd: string, opts?: cp.ExecOptions) =>
+            new Promise<string>((resolve) => {
+                cp.exec(cmd, { cwd, ...opts }, (_err, stdout) => resolve(stdout ? String(stdout) : ''));
+            });
 
         const metaLines = (await exec(`git log -1 --format="%H%n%ae%n%an%n%aI%n%cI%n%s" ${commitHash}`)).split('\n');
         const body = (await exec(`git log -1 --format="%b" ${commitHash}`)).trim();
         const patch = await exec(`git show ${commitHash}`, { maxBuffer: 10 * 1024 * 1024 });
 
-        const [fullHash = commitHash, authorEmail = '', authorName = '', authorDate = '', commitDate = '', subject = ''] = metaLines;
+        const [
+            fullHash = commitHash,
+            authorEmail = '',
+            authorName = '',
+            authorDate = '',
+            commitDate = '',
+            subject = '',
+        ] = metaLines;
 
         const panel = vscode.window.createWebviewPanel(
             'gitPlusCommitDetails',
             `Commit ${commitHash.substring(0, 7)}`,
             vscode.ViewColumn.One,
-            { enableScripts: true }
+            { enableScripts: true },
         );
 
         panel.webview.options = { enableScripts: true, localResourceRoots: [this._extensionUri] };
-        panel.webview.html = getCommitDetailsHtml(panel.webview, { fullHash, authorEmail, authorName, authorDate, commitDate, subject, body, patch }, this._extensionUri);
+        panel.webview.html = getCommitDetailsHtml(
+            panel.webview,
+            { fullHash, authorEmail, authorName, authorDate, commitDate, subject, body, patch },
+            this._extensionUri,
+        );
     }
 
     private async updateWebview(webview: vscode.Webview) {

@@ -125,8 +125,14 @@ export function getHtmlForWebview(webview: vscode.Webview, commits: GitCommit[],
 </html>`;
 }
 
-export function getCommitDetailsHtml(webview: vscode.Webview, data: CommitDetailsData, extensionUri: vscode.Uri): string {
-    const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'out', 'webview', 'commitDetails', 'index.js'));
+export function getCommitDetailsHtml(
+    webview: vscode.Webview,
+    data: CommitDetailsData,
+    extensionUri: vscode.Uri,
+): string {
+    const scriptUri = webview.asWebviewUri(
+        vscode.Uri.joinPath(extensionUri, 'out', 'webview', 'commitDetails', 'index.js'),
+    );
     const nonce = getNonce();
 
     return `<!DOCTYPE html>

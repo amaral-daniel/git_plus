@@ -9,15 +9,17 @@ interface Branch {
 }
 
 export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<BranchTreeItem | undefined | null | void> = new vscode.EventEmitter<BranchTreeItem | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<BranchTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
+    private _onDidChangeTreeData: vscode.EventEmitter<BranchTreeItem | undefined | null | void> =
+        new vscode.EventEmitter<BranchTreeItem | undefined | null | void>();
+    readonly onDidChangeTreeData: vscode.Event<BranchTreeItem | undefined | null | void> =
+        this._onDidChangeTreeData.event;
 
     constructor() {
         // Watch for git changes
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (workspaceFolders) {
             const watcher = vscode.workspace.createFileSystemWatcher(
-                new vscode.RelativePattern(workspaceFolders[0], '.git/**')
+                new vscode.RelativePattern(workspaceFolders[0], '.git/**'),
             );
             watcher.onDidChange(() => this.refresh());
             watcher.onDidCreate(() => this.refresh());
@@ -40,17 +42,19 @@ export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeIte
             const items: BranchTreeItem[] = [];
 
             if (currentBranch) {
-                items.push(new BranchTreeItem(
-                    `HEAD (${currentBranch})`,
-                    vscode.TreeItemCollapsibleState.None,
-                    'head',
-                    currentBranch
-                ));
+                items.push(
+                    new BranchTreeItem(
+                        `HEAD (${currentBranch})`,
+                        vscode.TreeItemCollapsibleState.None,
+                        'head',
+                        currentBranch,
+                    ),
+                );
             }
 
             items.push(
                 new BranchTreeItem('Local', vscode.TreeItemCollapsibleState.Expanded, 'folder'),
-                new BranchTreeItem('Remote', vscode.TreeItemCollapsibleState.Expanded, 'folder')
+                new BranchTreeItem('Remote', vscode.TreeItemCollapsibleState.Expanded, 'folder'),
             );
 
             return items;
@@ -60,14 +64,17 @@ export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeIte
             const isLocal = element.label === 'Local';
 
             return branches
-                .filter(branch => isLocal ? !branch.isRemote : branch.isRemote)
-                .map(branch => new BranchTreeItem(
-                    branch.name,
-                    vscode.TreeItemCollapsibleState.None,
-                    isLocal ? (branch.isHead ? 'local-branch-head' : 'local-branch') : 'remote-branch',
-                    branch.fullName,
-                    branch.isHead
-                ));
+                .filter((branch) => (isLocal ? !branch.isRemote : branch.isRemote))
+                .map(
+                    (branch) =>
+                        new BranchTreeItem(
+                            branch.name,
+                            vscode.TreeItemCollapsibleState.None,
+                            isLocal ? (branch.isHead ? 'local-branch-head' : 'local-branch') : 'remote-branch',
+                            branch.fullName,
+                            branch.isHead,
+                        ),
+                );
         }
 
         return [];
@@ -109,13 +116,11 @@ export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeIte
 
                 const branches: Branch[] = stdout
                     .split('\n')
-                    .filter(line => line.trim())
-                    .map(line => {
+                    .filter((line) => line.trim())
+                    .map((line) => {
                         const [fullName, head] = line.split('|');
                         const isRemote = fullName.startsWith('origin/') || fullName.startsWith('upstream/');
-                        const name = isRemote
-                            ? fullName.replace(/^(origin|upstream)\//, '')
-                            : fullName;
+                        const name = isRemote ? fullName.replace(/^(origin|upstream)\//, '') : fullName;
 
                         // Filter out remote HEAD pointers
                         if (fullName.includes('origin/HEAD') || fullName.includes('upstream/HEAD')) {
@@ -126,7 +131,7 @@ export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeIte
                             name,
                             fullName,
                             isRemote,
-                            isHead: head === '*'
+                            isHead: head === '*',
                         };
                     })
                     .filter((branch): branch is Branch => branch !== null);
@@ -143,15 +148,21 @@ export class BranchTreeItem extends vscode.TreeItem {
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
         public readonly contextValue: string,
         public readonly branchName?: string,
-        public readonly isHead?: boolean
+        public readonly isHead?: boolean,
     ) {
         super(label, collapsibleState);
 
         if (contextValue === 'head') {
-            this.iconPath = new vscode.ThemeIcon('git-branch', new vscode.ThemeColor('gitDecoration.modifiedResourceForeground'));
+            this.iconPath = new vscode.ThemeIcon(
+                'git-branch',
+                new vscode.ThemeColor('gitDecoration.modifiedResourceForeground'),
+            );
             this.description = 'Current Branch';
         } else if (contextValue === 'local-branch-head') {
-            this.iconPath = new vscode.ThemeIcon('git-branch', new vscode.ThemeColor('gitDecoration.modifiedResourceForeground'));
+            this.iconPath = new vscode.ThemeIcon(
+                'git-branch',
+                new vscode.ThemeColor('gitDecoration.modifiedResourceForeground'),
+            );
             this.description = '✓';
         } else if (contextValue === 'local-branch') {
             this.iconPath = new vscode.ThemeIcon('git-branch');

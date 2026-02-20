@@ -132,7 +132,9 @@
     "watch:webview": "esbuild src/webview/graph/index.tsx src/webview/commitDetails/index.tsx --bundle --outdir=out/webview --format=iife --target=es2020 --jsx=automatic --watch",
     "pretest": "pnpm run compile",
     "lint": "eslint src",
-    "lint:fix": "eslint src --fix"
+    "lint:fix": "eslint src --fix",
+    "format": "prettier --write src",
+    "format:check": "prettier --check src"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
@@ -141,7 +143,9 @@
     "@types/vscode": "^1.75.0",
     "esbuild": "^0.27.3",
     "eslint": "^9.0.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^5.0.0",
+    "prettier": "^3.8.1",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.0.0"
   },

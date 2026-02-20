@@ -1,6 +1,7 @@
 // @ts-check
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
+import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
     { ignores: ['out/**', 'node_modules/**'] },
@@ -20,4 +21,7 @@ export default tseslint.config(
         plugins: { 'react-hooks': reactHooks },
         rules: reactHooks.configs.recommended.rules,
     },
+
+    // Must be last — disables ESLint rules that would conflict with Prettier
+    prettier,
 );
