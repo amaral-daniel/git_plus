@@ -14,6 +14,17 @@ export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeIte
     readonly onDidChangeTreeData: vscode.Event<BranchTreeItem | undefined | null | void> =
         this._onDidChangeTreeData.event;
 
+    private _filter: string = '';
+
+    setFilter(filter: string): void {
+        this._filter = filter.toLowerCase();
+        this._onDidChangeTreeData.fire();
+    }
+
+    getFilter(): string {
+        return this._filter;
+    }
+
     constructor() {
         // Watch for git changes
         const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -65,6 +76,7 @@ export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeIte
 
             return branches
                 .filter((branch) => (isLocal ? !branch.isRemote : branch.isRemote))
+                .filter((branch) => !this._filter || branch.name.toLowerCase().includes(this._filter))
                 .map(
                     (branch) =>
                         new BranchTreeItem(
