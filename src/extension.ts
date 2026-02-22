@@ -105,6 +105,65 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
+        vscode.commands.registerCommand('git-lean.pull', () => {
+            const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+            if (!cwd) {
+                return;
+            }
+            cp.execFile('git', ['pull'], { cwd }, (error, _stdout, stderr) => {
+                if (error) {
+                    vscode.window.showErrorMessage(`Pull failed: ${stderr || error.message}`);
+                    return;
+                }
+                vscode.window.showInformationMessage('Pull successful');
+                branchProvider.refresh();
+            });
+        }),
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('git-lean.push', () => {
+            const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+            if (!cwd) {
+                return;
+            }
+            cp.execFile('git', ['push'], { cwd }, (error, _stdout, stderr) => {
+                if (error) {
+                    vscode.window.showErrorMessage(`Push failed: ${stderr || error.message}`);
+                    return;
+                }
+                vscode.window.showInformationMessage('Push successful');
+                branchProvider.refresh();
+            });
+        }),
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('git-lean.pushForce', async () => {
+            const confirm = await vscode.window.showWarningMessage(
+                'Force push will overwrite remote history. Are you sure?',
+                'Force Push',
+                'Cancel',
+            );
+            if (confirm !== 'Force Push') {
+                return;
+            }
+            const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+            if (!cwd) {
+                return;
+            }
+            cp.execFile('git', ['push', '--force-with-lease'], { cwd }, (error, _stdout, stderr) => {
+                if (error) {
+                    vscode.window.showErrorMessage(`Force push failed: ${stderr || error.message}`);
+                    return;
+                }
+                vscode.window.showInformationMessage('Force push successful');
+                branchProvider.refresh();
+            });
+        }),
+    );
+
+    context.subscriptions.push(
         vscode.commands.registerCommand('git-lean.rebaseBranch', async (branchTreeItem: any) => {
             const targetBranch = branchTreeItem.branchName;
 

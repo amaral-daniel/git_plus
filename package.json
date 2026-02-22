@@ -37,9 +37,24 @@
     "menus": {
       "view/title": [
         {
+          "command": "git-lean.pull",
+          "when": "view == gitLeanBranchView",
+          "group": "navigation@1"
+        },
+        {
+          "command": "git-lean.push",
+          "when": "view == gitLeanBranchView",
+          "group": "navigation@2"
+        },
+        {
+          "command": "git-lean.pushForce",
+          "when": "view == gitLeanBranchView",
+          "group": "navigation@3"
+        },
+        {
           "command": "git-lean.refreshBranches",
           "when": "view == gitLeanBranchView",
-          "group": "navigation"
+          "group": "navigation@4"
         }
       ]
     },
@@ -81,6 +96,21 @@
       {
         "command": "git-lean.deleteBranch",
         "title": "Delete Branch"
+      },
+      {
+        "command": "git-lean.pull",
+        "title": "Pull",
+        "icon": "$(arrow-down)"
+      },
+      {
+        "command": "git-lean.push",
+        "title": "Push",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "git-lean.pushForce",
+        "title": "Force Push",
+        "icon": "$(repo-force-push)"
       },
       {
         "command": "git-lean.refreshBranches",
