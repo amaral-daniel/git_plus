@@ -37,10 +37,10 @@ export function getHtmlForWebview(webview: vscode.Webview, commits: GitCommit[],
             font-family: var(--vscode-font-family);
             color: var(--vscode-foreground);
             background-color: var(--vscode-editor-background);
-            padding: 10px;
+            padding: 0;
             margin: 0;
         }
-        .table-container { overflow-x: auto; }
+        .table-container { overflow-x: auto; padding: 0 10px; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; }
         td { padding: 4px 8px; }
         tbody tr:hover { background-color: var(--vscode-list-hoverBackground); }
@@ -89,6 +89,27 @@ export function getHtmlForWebview(webview: vscode.Webview, commits: GitCommit[],
         }
         .date-cell { white-space: nowrap; color: var(--vscode-descriptionForeground); font-size: 11px; width: 140px; }
         .no-commits { text-align: center; padding: 40px; color: var(--vscode-descriptionForeground); }
+        .search-wrap {
+            padding: 6px 8px;
+            position: sticky;
+            top: 0;
+            background: var(--vscode-editor-background);
+            z-index: 10;
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+        .search-input {
+            width: 100%;
+            background: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-input-border, transparent);
+            padding: 3px 6px;
+            font-size: var(--vscode-font-size);
+            font-family: var(--vscode-font-family);
+            outline: none;
+            border-radius: 2px;
+            box-sizing: border-box;
+        }
+        .search-input:focus { border-color: var(--vscode-focusBorder); }
         .context-menu {
             position: fixed;
             background-color: var(--vscode-menu-background);
