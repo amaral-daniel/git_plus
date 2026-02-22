@@ -113,6 +113,7 @@ body {
     font-family: var(--vscode-font-family);
     outline: none;
     border-radius: 2px;
+    box-sizing: border-box;
 }
 .search-input:focus { border-color: var(--vscode-focusBorder); }
 .section-header {

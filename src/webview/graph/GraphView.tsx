@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { GitCommit } from '../types';
 import { vscode } from '../vscodeApi';
 import { areCommitsConsecutive, calculateLanes, calculateRowGraphData } from './graphRenderer';
@@ -24,17 +24,38 @@ interface Props {
 }
 
 export function GraphView({ commits }: Props) {
+    const [searchQuery, setSearchQuery] = useState('');
     const [selectedIndices, setSelectedIndices] = useState(new Set<number>());
     const [rangeStartIndex, setRangeStartIndex] = useState<number | null>(null);
     const [singleMenu, setSingleMenu] = useState<SingleMenu | null>(null);
     const [rangeMenu, setRangeMenu] = useState<RangeMenu | null>(null);
     const [editingHash, setEditingHash] = useState<string | null>(null);
 
-    const commitLanes = useMemo(() => calculateLanes(commits), [commits]);
-    const rowGraphData = useMemo(() => calculateRowGraphData(commits, commitLanes), [commits, commitLanes]);
+    const filteredCommits = useMemo(() => {
+        if (!searchQuery) {
+            return commits;
+        }
+        const q = searchQuery.toLowerCase();
+        return commits.filter(
+            (c) => c.message.toLowerCase().includes(q) || c.shortHash.includes(q) || c.author.toLowerCase().includes(q),
+        );
+    }, [commits, searchQuery]);
+
+    useEffect(() => {
+        setSelectedIndices(new Set());
+        setRangeStartIndex(null);
+        setSingleMenu(null);
+        setRangeMenu(null);
+    }, [searchQuery]);
+
+    const commitLanes = useMemo(() => calculateLanes(filteredCommits), [filteredCommits]);
+    const rowGraphData = useMemo(
+        () => calculateRowGraphData(filteredCommits, commitLanes),
+        [filteredCommits, commitLanes],
+    );
     const maxLane = useMemo(
-        () => (commits.length > 0 ? Math.max(...Array.from(commitLanes.values())) + 1 : 1),
-        [commitLanes, commits],
+        () => (filteredCommits.length > 0 ? Math.max(...Array.from(commitLanes.values())) + 1 : 1),
+        [commitLanes, filteredCommits],
     );
     const canvasWidth = maxLane * LANE_WIDTH + 12;
 
@@ -78,17 +99,17 @@ export function GraphView({ commits }: Props) {
                     x: e.pageX,
                     y: e.pageY,
                     sortedIndices,
-                    consecutive: areCommitsConsecutive(commits, sortedIndices),
+                    consecutive: areCommitsConsecutive(filteredCommits, sortedIndices),
                 });
                 setSingleMenu(null);
             } else {
                 setRangeStartIndex(index);
                 setSelectedIndices(new Set([index]));
-                setSingleMenu({ x: e.pageX, y: e.pageY, hash: commits[index].hash, index });
+                setSingleMenu({ x: e.pageX, y: e.pageY, hash: filteredCommits[index].hash, index });
                 setRangeMenu(null);
             }
         },
-        [selectedIndices, commits],
+        [selectedIndices, filteredCommits],
     );
 
     const handleSingleAction = useCallback(
@@ -113,12 +134,12 @@ export function GraphView({ commits }: Props) {
                 return;
             }
             const { sortedIndices } = rangeMenu;
-            const hashes = sortedIndices.map((i) => commits[i].hash);
-            const parentHash = commits[sortedIndices[sortedIndices.length - 1]].parents[0];
+            const hashes = sortedIndices.map((i) => filteredCommits[i].hash);
+            const parentHash = filteredCommits[sortedIndices[sortedIndices.length - 1]].parents[0];
             closeMenus();
             vscode.postMessage({ command: action, hashes, parentHash });
         },
-        [rangeMenu, commits, closeMenus],
+        [rangeMenu, filteredCommits, closeMenus],
     );
 
     const handleEditConfirm = useCallback(
@@ -141,28 +162,47 @@ export function GraphView({ commits }: Props) {
 
     return (
         <div onClick={closeMenus}>
-            <div className="table-container">
-                <table>
-                    <tbody>
-                        {commits.map((commit, index) => (
-                            <CommitRow
-                                key={commit.hash}
-                                commit={commit}
-                                lane={commitLanes.get(commit.hash) ?? 0}
-                                canvasWidth={canvasWidth}
-                                headCommitHash={headCommitHash}
-                                isSelected={selectedIndices.has(index)}
-                                isEditing={editingHash === commit.hash}
-                                rowGraphData={rowGraphData[index]}
-                                onClick={(shiftKey) => handleRowClick(index, shiftKey)}
-                                onContextMenu={(e) => handleContextMenu(e, index)}
-                                onEditConfirm={(msg) => handleEditConfirm(commit.hash, msg)}
-                                onEditCancel={() => setEditingHash(null)}
-                            />
-                        ))}
-                    </tbody>
-                </table>
+            <div className="search-wrap">
+                <input
+                    className="search-input"
+                    type="text"
+                    placeholder="Search commits…"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    autoComplete="off"
+                    spellCheck={false}
+                    onClick={(e) => e.stopPropagation()}
+                />
             </div>
+
+            {filteredCommits.length === 0 ? (
+                <div className="no-commits">
+                    <p>No commits match &ldquo;{searchQuery}&rdquo;</p>
+                </div>
+            ) : (
+                <div className="table-container">
+                    <table>
+                        <tbody>
+                            {filteredCommits.map((commit, index) => (
+                                <CommitRow
+                                    key={commit.hash}
+                                    commit={commit}
+                                    lane={commitLanes.get(commit.hash) ?? 0}
+                                    canvasWidth={canvasWidth}
+                                    headCommitHash={headCommitHash}
+                                    isSelected={selectedIndices.has(index)}
+                                    isEditing={editingHash === commit.hash}
+                                    rowGraphData={rowGraphData[index]}
+                                    onClick={(shiftKey) => handleRowClick(index, shiftKey)}
+                                    onContextMenu={(e) => handleContextMenu(e, index)}
+                                    onEditConfirm={(msg) => handleEditConfirm(commit.hash, msg)}
+                                    onEditCancel={() => setEditingHash(null)}
+                                />
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             {singleMenu && (
                 <div
