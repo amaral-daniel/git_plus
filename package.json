@@ -25,7 +25,7 @@
         {
           "id": "gitLeanBranchView",
           "name": "Branches",
-          "type": "tree"
+          "type": "webview"
         },
         {
           "id": "gitLeanGraphView",
@@ -40,28 +40,6 @@
           "command": "git-lean.refreshBranches",
           "when": "view == gitLeanBranchView",
           "group": "navigation"
-        }
-      ],
-      "view/item/context": [
-        {
-          "command": "git-lean.checkoutBranch",
-          "when": "view == gitLeanBranchView && viewItem == local-branch"
-        },
-        {
-          "command": "git-lean.deleteBranch",
-          "when": "view == gitLeanBranchView && viewItem == local-branch"
-        },
-        {
-          "command": "git-lean.createBranch",
-          "when": "view == gitLeanBranchView && (viewItem == local-branch || viewItem == local-branch-head || viewItem == remote-branch)"
-        },
-        {
-          "command": "git-lean.rebaseBranch",
-          "when": "view == gitLeanBranchView && (viewItem == local-branch || viewItem == remote-branch)"
-        },
-        {
-          "command": "git-lean.mergeBranch",
-          "when": "view == gitLeanBranchView && (viewItem == local-branch || viewItem == remote-branch)"
         }
       ]
     },
@@ -127,9 +105,9 @@
   "scripts": {
     "vscode:prepublish": "pnpm run compile",
     "compile": "tsc -p ./ && pnpm run bundle-webview",
-    "bundle-webview": "esbuild src/webview/graph/index.tsx src/webview/commitDetails/index.tsx --bundle --outdir=out/webview --format=iife --target=es2020 --jsx=automatic",
+    "bundle-webview": "esbuild src/webview/graph/index.tsx src/webview/commitDetails/index.tsx src/webview/branches/index.tsx --bundle --outdir=out/webview --format=iife --target=es2020 --jsx=automatic",
     "watch": "tsc -watch -p ./",
-    "watch:webview": "esbuild src/webview/graph/index.tsx src/webview/commitDetails/index.tsx --bundle --outdir=out/webview --format=iife --target=es2020 --jsx=automatic --watch",
+    "watch:webview": "esbuild src/webview/graph/index.tsx src/webview/commitDetails/index.tsx src/webview/branches/index.tsx --bundle --outdir=out/webview --format=iife --target=es2020 --jsx=automatic --watch",
     "pretest": "pnpm run compile",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",

@@ -1,28 +1,16 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import { GitGraphViewProvider } from './gitGraphView';
-import { BranchTreeProvider, BranchTreeItem } from './branchTreeProvider';
+import { BranchWebviewProvider } from './branchWebviewProvider';
 
 export function activate(context: vscode.ExtensionContext) {
-    const provider = new GitGraphViewProvider(context.extensionUri);
-    const branchTreeProvider = new BranchTreeProvider();
+    const graphProvider = new GitGraphViewProvider(context.extensionUri);
+    const branchProvider = new BranchWebviewProvider(context.extensionUri);
 
-    context.subscriptions.push(vscode.window.registerWebviewViewProvider(GitGraphViewProvider.viewType, provider));
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider(GitGraphViewProvider.viewType, graphProvider));
+    context.subscriptions.push(vscode.window.registerWebviewViewProvider(BranchWebviewProvider.viewType, branchProvider));
 
-    const branchTreeView = vscode.window.createTreeView('gitLeanBranchView', {
-        treeDataProvider: branchTreeProvider,
-    });
-
-    branchTreeView.onDidChangeSelection((e) => {
-        const selected = e.selection[0] as BranchTreeItem | undefined;
-        if (selected && (selected.contextValue === 'local-branch' || selected.contextValue === 'remote-branch')) {
-            provider.filterByBranch(selected.branchName || null);
-        } else {
-            provider.filterByBranch(null);
-        }
-    });
-
-    context.subscriptions.push(branchTreeView);
+    branchProvider.onBranchSelected = (branch) => graphProvider.filterByBranch(branch);
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-lean.showGraph', () => {
@@ -32,31 +20,31 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-lean.editCommitMessage', (commitHash: string) => {
-            provider.editCommitMessage(commitHash);
+            graphProvider.editCommitMessage(commitHash);
         }),
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-lean.cherryPick', (commitHash: string) => {
-            provider.cherryPickCommit(commitHash);
+            graphProvider.cherryPickCommit(commitHash);
         }),
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-lean.copyHash', (commitHash: string) => {
-            provider.copyCommitHash(commitHash);
+            graphProvider.copyCommitHash(commitHash);
         }),
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-lean.revertCommit', (commitHash: string) => {
-            provider.revertCommit(commitHash);
+            graphProvider.revertCommit(commitHash);
         }),
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-lean.resetToCommit', (commitHash: string) => {
-            provider.resetToCommit(commitHash);
+            graphProvider.resetToCommit(commitHash);
         }),
     );
 
@@ -75,7 +63,7 @@ export function activate(context: vscode.ExtensionContext) {
                     return;
                 }
                 vscode.window.showInformationMessage(`Switched to branch '${branchName}'`);
-                branchTreeProvider.refresh();
+                branchProvider.refresh();
             });
         }),
     );
@@ -105,14 +93,14 @@ export function activate(context: vscode.ExtensionContext) {
                     return;
                 }
                 vscode.window.showInformationMessage(`Deleted branch '${branchName}'`);
-                branchTreeProvider.refresh();
+                branchProvider.refresh();
             });
         }),
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-lean.refreshBranches', () => {
-            branchTreeProvider.refresh();
+            branchProvider.refresh();
         }),
     );
 
@@ -133,7 +121,7 @@ export function activate(context: vscode.ExtensionContext) {
                     return;
                 }
                 vscode.window.showInformationMessage(`Rebased onto '${targetBranch}' successfully`);
-                branchTreeProvider.refresh();
+                branchProvider.refresh();
             });
         }),
     );
@@ -154,7 +142,7 @@ export function activate(context: vscode.ExtensionContext) {
                     return;
                 }
                 vscode.window.showInformationMessage(`Merged '${sourceBranch}' successfully`);
-                branchTreeProvider.refresh();
+                branchProvider.refresh();
             });
         }),
     );
@@ -193,7 +181,7 @@ export function activate(context: vscode.ExtensionContext) {
                     return;
                 }
                 vscode.window.showInformationMessage(`Created and switched to branch '${newBranchName}'`);
-                branchTreeProvider.refresh();
+                branchProvider.refresh();
             });
         }),
     );
