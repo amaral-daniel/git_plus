@@ -94,9 +94,10 @@ body {
     color: var(--vscode-foreground);
     background: transparent;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
 }
 .search-wrap {
-    padding: 6px 8px;
+    padding: 8px 10px;
     position: sticky;
     top: 0;
     background: var(--vscode-sideBar-background);
@@ -107,63 +108,92 @@ body {
     width: 100%;
     background: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
-    border: 1px solid var(--vscode-input-border, transparent);
-    padding: 3px 6px;
+    border: 1px solid var(--vscode-input-border, rgba(128,128,128,0.25));
+    padding: 4px 8px;
     font-size: var(--vscode-font-size);
     font-family: var(--vscode-font-family);
     outline: none;
-    border-radius: 2px;
+    border-radius: 4px;
     box-sizing: border-box;
+    transition: border-color 0.15s ease;
 }
 .search-input:focus { border-color: var(--vscode-focusBorder); }
+.search-input::placeholder { color: var(--vscode-input-placeholderForeground, rgba(128,128,128,0.45)); }
+.section {
+    padding-bottom: 4px;
+}
 .section-header {
-    padding: 6px 12px 3px;
-    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 10px 5px;
+    font-family: var(--vscode-editor-font-family, monospace);
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.1em;
+    font-weight: 500;
+    color: var(--vscode-descriptionForeground);
     opacity: 0.65;
-    font-weight: 600;
+}
+.section-header::before,
+.section-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--vscode-panel-border);
 }
 .branch-row {
     display: flex;
     align-items: center;
-    padding: 2px 8px 2px 20px;
-    gap: 5px;
+    padding: 3px 10px 3px 16px;
+    gap: 6px;
     cursor: pointer;
     user-select: none;
-    min-height: 22px;
+    min-height: 24px;
+    border-left: 2px solid transparent;
+    transition: background 0.07s ease, border-color 0.1s ease;
 }
 .branch-row:hover { background: var(--vscode-list-hoverBackground); }
 .branch-row.selected {
     background: var(--vscode-list-activeSelectionBackground);
     color: var(--vscode-list-activeSelectionForeground);
 }
-.branch-row.is-head .branch-label { color: var(--vscode-gitDecoration-modifiedResourceForeground); }
+.branch-row.is-head {
+    border-left-color: var(--vscode-gitDecoration-modifiedResourceForeground);
+}
+.branch-row.is-head .branch-label {
+    color: var(--vscode-gitDecoration-modifiedResourceForeground);
+    font-weight: 500;
+}
 .branch-row.selected .branch-label { color: inherit; }
-.branch-icon { font-size: 12px; flex-shrink: 0; opacity: 0.75; }
-.branch-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.head-mark { font-size: 10px; flex-shrink: 0; opacity: 0.7; }
-.empty { padding: 10px 12px; opacity: 0.5; font-style: italic; }
+.branch-icon { font-size: 11px; flex-shrink: 0; opacity: 0.65; }
+.branch-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
+.head-mark { font-size: 9px; flex-shrink: 0; opacity: 0.8; color: var(--vscode-gitDecoration-modifiedResourceForeground); }
+.empty { padding: 10px 12px; opacity: 0.5; font-style: italic; font-size: 12px; }
 .ctx-menu {
     position: fixed;
     background: var(--vscode-menu-background);
     border: 1px solid var(--vscode-menu-border, var(--vscode-panel-border));
-    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.15);
     z-index: 50;
     min-width: 190px;
-    padding: 3px 0;
+    padding: 4px 0;
+    overflow: hidden;
 }
 .ctx-item {
-    padding: 5px 14px;
+    padding: 6px 16px;
     cursor: pointer;
     color: var(--vscode-menu-foreground);
+    font-size: 12.5px;
     white-space: nowrap;
+    transition: background 0.08s ease;
 }
 .ctx-item:hover {
-    background: var(--vscode-menu-selectionBackground);
-    color: var(--vscode-menu-selectionForeground);
+    background: var(--vscode-list-hoverBackground);
+    color: var(--vscode-list-hoverForeground);
 }
-.ctx-sep { height: 1px; background: var(--vscode-panel-border); margin: 3px 0; }
+.ctx-sep { height: 1px; background: var(--vscode-panel-border); margin: 3px 6px; }
 </style>
 </head>
 <body>
