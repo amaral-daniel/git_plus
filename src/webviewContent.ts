@@ -60,7 +60,7 @@ export function getHtmlForWebview(webview: vscode.Webview, commits: GitCommit[],
             opacity: 0.65;
             padding-left: 8px;
         }
-        .message-cell { font-size: 12px; display: flex; align-items: center; gap: 5px; overflow: hidden; padding: 0 8px 0 2px; }
+        .message-cell { font-size: 12px; display: flex; align-items: center; gap: 5px; overflow: hidden; padding: 3px 8px 3px 2px; }
         .message-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .refs-container { display: flex; gap: 3px; flex-shrink: 0; align-items: center; }
         .ref-badge {
@@ -176,6 +176,8 @@ export function getHtmlForWebview(webview: vscode.Webview, commits: GitCommit[],
         }
         .context-menu-separator { height: 1px; background-color: var(--vscode-panel-border); margin: 3px 6px; }
         .message-edit-input {
+            flex: 1;
+            min-width: 0;
             background: transparent;
             border: none;
             border-bottom: 1.5px solid var(--vscode-focusBorder);
@@ -184,7 +186,6 @@ export function getHtmlForWebview(webview: vscode.Webview, commits: GitCommit[],
             font-size: 12px;
             outline: none;
             padding: 0;
-            width: 100%;
         }
         tr.row-selected {
             background-color: var(--vscode-list-inactiveSelectionBackground);

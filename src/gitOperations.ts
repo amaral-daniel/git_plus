@@ -78,18 +78,61 @@ export class GitOperations {
             return;
         }
 
-        cp.exec(
-            `git commit --amend ${commitHash}~1..${commitHash} -m "${newMessage.replace(/"/g, '\\"')}"`,
-            { cwd },
-            (error) => {
+        const headHash = await new Promise<string>((resolve) => {
+            cp.exec('git rev-parse HEAD', { cwd }, (err, stdout) => resolve(err ? '' : stdout.trim()));
+        });
+
+        const escaped = newMessage.replace(/"/g, '\\"');
+
+        if (commitHash === headHash) {
+            cp.exec(`git commit --amend -m "${escaped}"`, { cwd }, (error) => {
                 if (error) {
                     vscode.window.showErrorMessage(`Failed to edit commit message: ${error.message}`);
                     return;
                 }
                 vscode.window.showInformationMessage('Commit message updated successfully');
                 this.onRefresh();
-            },
-        );
+            });
+        } else {
+            const seqEditorScript = `
+const fs = require('fs');
+const file = process.argv[2];
+const targetHash = ${JSON.stringify(commitHash)};
+const lines = fs.readFileSync(file, 'utf8').split('\\n');
+const result = lines.map(line => {
+    const parts = line.trim().split(/\\s+/);
+    if ((parts[0] === 'pick' || parts[0] === 'p') && parts[1] && targetHash.startsWith(parts[1])) {
+        return 'reword ' + parts.slice(1).join(' ');
+    }
+    return line;
+});
+fs.writeFileSync(file, result.join('\\n'));
+`;
+            const msgEditorScript = `
+const fs = require('fs');
+fs.writeFileSync(process.argv[2], ${JSON.stringify(newMessage + '\n')});
+`;
+
+            const tmpDir = os.tmpdir();
+            const seqEditorPath = path.join(tmpDir, 'git-lean-seq-editor.js');
+            const msgEditorPath = path.join(tmpDir, 'git-lean-msg-editor.js');
+            fs.writeFileSync(seqEditorPath, seqEditorScript);
+            fs.writeFileSync(msgEditorPath, msgEditorScript);
+
+            const env = { ...process.env, GIT_SEQUENCE_EDITOR: `node "${seqEditorPath}"`, GIT_EDITOR: `node "${msgEditorPath}"` };
+
+            cp.exec(`git rebase -i ${commitHash}~1`, { cwd, env }, (error, _stdout, stderr) => {
+                try { fs.unlinkSync(seqEditorPath); } catch {}
+                try { fs.unlinkSync(msgEditorPath); } catch {}
+                if (error) {
+                    cp.exec('git rebase --abort', { cwd }, () => {});
+                    vscode.window.showErrorMessage(`Failed to edit commit message: ${error.message}\n${stderr}`);
+                    return;
+                }
+                vscode.window.showInformationMessage('Commit message updated successfully');
+                this.onRefresh();
+            });
+        }
     }
 
     async cherryPickCommit(commitHash: string) {
