@@ -87,8 +87,27 @@ export function activate(context: vscode.ExtensionContext) {
             }
 
             const cwd = workspaceFolders[0].uri.fsPath;
-            cp.execFile('git', ['branch', '-d', branchName], { cwd }, (error, _stdout, stderr) => {
+            cp.execFile('git', ['branch', '-d', branchName], { cwd }, async (error, _stdout, stderr) => {
                 if (error) {
+                    if (stderr.includes('not fully merged')) {
+                        const forceConfirm = await vscode.window.showWarningMessage(
+                            `Branch '${branchName}' is not fully merged. Force delete anyway?`,
+                            'Force Delete',
+                            'Cancel',
+                        );
+                        if (forceConfirm !== 'Force Delete') {
+                            return;
+                        }
+                        cp.execFile('git', ['branch', '-D', branchName], { cwd }, (err2, _stdout2, stderr2) => {
+                            if (err2) {
+                                vscode.window.showErrorMessage(`Failed to delete branch: ${err2.message}\n${stderr2}`);
+                                return;
+                            }
+                            vscode.window.showInformationMessage(`Deleted branch '${branchName}'`);
+                            branchProvider.refresh();
+                        });
+                        return;
+                    }
                     vscode.window.showErrorMessage(`Failed to delete branch: ${error.message}\n${stderr}`);
                     return;
                 }
