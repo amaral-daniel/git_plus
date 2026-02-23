@@ -102,14 +102,13 @@ body {
     top: 0;
     background: var(--vscode-sideBar-background);
     z-index: 10;
-    border-bottom: 1px solid var(--vscode-panel-border);
 }
 .search-input {
     width: 100%;
     background: var(--vscode-input-background);
     color: var(--vscode-input-foreground);
     border: 1px solid var(--vscode-input-border, rgba(128,128,128,0.25));
-    padding: 4px 8px;
+    padding: 5px 8px;
     font-size: var(--vscode-font-size);
     font-family: var(--vscode-font-family);
     outline: none;
