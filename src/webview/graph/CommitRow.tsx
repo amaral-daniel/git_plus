@@ -64,7 +64,21 @@ function RefBadges({ refs }: { refs: string[] }) {
     if (!badges.length) {
         return null;
     }
-    return <div className="refs-container">{badges}</div>;
+
+    const MAX_VISIBLE = 4;
+    const visible = badges.slice(0, MAX_VISIBLE);
+    const overflow = badges.length - MAX_VISIBLE;
+
+    return (
+        <div className="refs-container">
+            {visible}
+            {overflow > 0 && (
+                <span className="ref-badge ref-overflow" title={`+${overflow} more ref${overflow > 1 ? 's' : ''}`}>
+                    +{overflow}
+                </span>
+            )}
+        </div>
+    );
 }
 
 export const CommitRow = React.memo(function CommitRow({

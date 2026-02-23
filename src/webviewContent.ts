@@ -97,6 +97,14 @@ export function getHtmlForWebview(webview: vscode.Webview, commits: GitCommit[],
             border-color: var(--vscode-gitDecoration-submoduleResourceForeground);
             color: var(--vscode-gitDecoration-submoduleResourceForeground);
         }
+        .ref-overflow {
+            background-color: transparent;
+            border-color: var(--vscode-descriptionForeground);
+            color: var(--vscode-descriptionForeground);
+            opacity: 0.55;
+            font-variant-numeric: tabular-nums;
+            cursor: default;
+        }
         .author-cell {
             white-space: nowrap;
             color: var(--vscode-descriptionForeground);
@@ -123,14 +131,13 @@ export function getHtmlForWebview(webview: vscode.Webview, commits: GitCommit[],
             top: 0;
             background: var(--vscode-editor-background);
             z-index: 10;
-            border-bottom: 1px solid var(--vscode-panel-border);
         }
         .search-input {
             width: 100%;
             background: var(--vscode-input-background);
             color: var(--vscode-input-foreground);
             border: 1px solid var(--vscode-input-border, rgba(128,128,128,0.25));
-            padding: 5px 10px;
+            padding: 5px 8px;
             font-size: var(--vscode-font-size);
             font-family: var(--vscode-font-family);
             outline: none;
