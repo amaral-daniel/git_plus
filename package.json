@@ -1,5 +1,6 @@
 {
   "name": "git-lean",
+  "publisher": "danieldev",
   "displayName": "Git Lean",
   "description": "A minimalist git extension for VSCode",
   "version": "0.0.1",
