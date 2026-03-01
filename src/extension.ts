@@ -2,13 +2,16 @@ import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import { GitGraphViewProvider } from './gitGraphView';
 import { BranchWebviewProvider } from './branchWebviewProvider';
+import { BranchTreeItem } from './branchTreeProvider';
 
 export function activate(context: vscode.ExtensionContext) {
     const graphProvider = new GitGraphViewProvider(context.extensionUri);
     const branchProvider = new BranchWebviewProvider(context.extensionUri);
 
     context.subscriptions.push(vscode.window.registerWebviewViewProvider(GitGraphViewProvider.viewType, graphProvider));
-    context.subscriptions.push(vscode.window.registerWebviewViewProvider(BranchWebviewProvider.viewType, branchProvider));
+    context.subscriptions.push(
+        vscode.window.registerWebviewViewProvider(BranchWebviewProvider.viewType, branchProvider),
+    );
 
     branchProvider.onBranchSelected = (branch) => graphProvider.filterByBranch(branch);
 
@@ -49,7 +52,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-lean.checkoutBranch', async (item: any) => {
+        vscode.commands.registerCommand('git-lean.checkoutBranch', async (item: string | BranchTreeItem) => {
             const branchName = typeof item === 'string' ? item : item.branchName;
             const workspaceFolders = vscode.workspace.workspaceFolders;
             if (!workspaceFolders) {
@@ -69,7 +72,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-lean.deleteBranch', async (branchTreeItem: any) => {
+        vscode.commands.registerCommand('git-lean.deleteBranch', async (branchTreeItem: BranchTreeItem) => {
             const branchName = branchTreeItem.branchName;
             const confirm = await vscode.window.showWarningMessage(
                 `Are you sure you want to delete branch '${branchName}'?`,
@@ -183,7 +186,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-lean.rebaseBranch', async (branchTreeItem: any) => {
+        vscode.commands.registerCommand('git-lean.rebaseBranch', async (branchTreeItem: BranchTreeItem) => {
             const targetBranch = branchTreeItem.branchName;
 
             const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -205,7 +208,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-lean.mergeBranch', async (branchTreeItem: any) => {
+        vscode.commands.registerCommand('git-lean.mergeBranch', async (branchTreeItem: BranchTreeItem) => {
             const sourceBranch = branchTreeItem.branchName;
 
             const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -226,7 +229,7 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
-        vscode.commands.registerCommand('git-lean.createBranch', async (branchTreeItem: any) => {
+        vscode.commands.registerCommand('git-lean.createBranch', async (branchTreeItem: BranchTreeItem) => {
             const sourceBranch = branchTreeItem.branchName;
 
             const newBranchName = await vscode.window.showInputBox({
