@@ -210,26 +210,31 @@ export function GraphView({ commits }: Props) {
                     style={{ display: 'block', left: singleMenu.x, top: singleMenu.y }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="context-menu-item" onClick={() => handleSingleAction('showCommitDetails')}>
-                        Show more details
+                    <div className="context-menu-item" onClick={() => handleSingleAction('editCommitMessage')}>
+                        Edit Commit Message
+                    </div>
+                    <div className="context-menu-item" onClick={() => handleSingleAction('cherryPick')}>
+                        Cherry Pick
                     </div>
                     <div className="context-menu-separator" />
                     <div className="context-menu-item" onClick={() => handleSingleAction('copyHash')}>
                         Copy Hash
                     </div>
-                    <div className="context-menu-separator" />
-                    <div className="context-menu-item" onClick={() => handleSingleAction('cherryPick')}>
-                        Cherry Pick
-                    </div>
                     <div className="context-menu-item" onClick={() => handleSingleAction('revertCommit')}>
                         Revert Commit
                     </div>
-                    <div className="context-menu-separator" />
-                    <div className="context-menu-item" onClick={() => handleSingleAction('editCommitMessage')}>
-                        Edit Commit Message
-                    </div>
                     <div className="context-menu-item" onClick={() => handleSingleAction('resetToCommit')}>
                         Reset to Commit
+                    </div>
+                    <div
+                        className="context-menu-item context-menu-item--danger"
+                        onClick={() => handleSingleAction('dropCommit')}
+                    >
+                        Drop Commit
+                    </div>
+                    <div className="context-menu-separator" />
+                    <div className="context-menu-item" onClick={() => handleSingleAction('showCommitDetails')}>
+                        Show more details
                     </div>
                 </div>
             )}
