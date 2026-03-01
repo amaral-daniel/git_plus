@@ -1,10 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { GitCommit } from '../types';
 import { vscode } from '../vscodeApi';
-import { areCommitsConsecutive, calculateLanes, calculateRowGraphData } from './graphRenderer';
 import { CommitRow } from './CommitRow';
 
-const LANE_WIDTH = 18;
+function areCommitsConsecutive(commits: GitCommit[], sortedIndices: number[]): boolean {
+    for (let i = 0; i < sortedIndices.length - 1; i++) {
+        const newer = commits[sortedIndices[i]];
+        const older = commits[sortedIndices[i + 1]];
+        if (newer.parents.length !== 1 || !newer.parents.includes(older.hash)) {
+            return false;
+        }
+    }
+    return true;
+}
 
 interface SingleMenu {
     x: number;
@@ -47,17 +55,6 @@ export function GraphView({ commits }: Props) {
         setSingleMenu(null);
         setRangeMenu(null);
     }, [searchQuery]);
-
-    const commitLanes = useMemo(() => calculateLanes(filteredCommits), [filteredCommits]);
-    const rowGraphData = useMemo(
-        () => calculateRowGraphData(filteredCommits, commitLanes),
-        [filteredCommits, commitLanes],
-    );
-    const maxLane = useMemo(
-        () => (filteredCommits.length > 0 ? Math.max(...Array.from(commitLanes.values())) + 1 : 1),
-        [commitLanes, filteredCommits],
-    );
-    const canvasWidth = maxLane * LANE_WIDTH + 12;
 
     const headCommitHash = useMemo(
         () => (commits.find((c) => c.refs.some((r) => r.startsWith('HEAD -> ') || r === 'HEAD')) ?? commits[0])?.hash,
@@ -187,12 +184,9 @@ export function GraphView({ commits }: Props) {
                                 <CommitRow
                                     key={commit.hash}
                                     commit={commit}
-                                    lane={commitLanes.get(commit.hash) ?? 0}
-                                    canvasWidth={canvasWidth}
                                     headCommitHash={headCommitHash}
                                     isSelected={selectedIndices.has(index)}
                                     isEditing={editingHash === commit.hash}
-                                    rowGraphData={rowGraphData[index]}
                                     onClick={(shiftKey) => handleRowClick(index, shiftKey)}
                                     onContextMenu={(e) => handleContextMenu(e, index)}
                                     onEditConfirm={(msg) => handleEditConfirm(commit.hash, msg)}

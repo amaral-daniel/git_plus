@@ -296,7 +296,7 @@ export function BranchPanel({ branches }: Props) {
                 vscode.postMessage({ command: 'selectBranch', branchName: null });
             } else {
                 setSelected(branch.fullName);
-                vscode.postMessage({ command: 'selectBranch', branchName: branch.name });
+                vscode.postMessage({ command: 'selectBranch', branchName: branch.fullName });
             }
         },
         [selected],
