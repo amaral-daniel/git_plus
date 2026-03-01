@@ -18,6 +18,7 @@ yarn-error.log*
 # Editor directories
 .vscode-test/
 .vscode-test-web/
+.idea/
 
 # OS files
 .DS_Store

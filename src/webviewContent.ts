@@ -60,7 +60,7 @@ export function getHtmlForWebview(webview: vscode.Webview, commits: GitCommit[],
             opacity: 0.65;
             padding-left: 8px;
         }
-        .message-cell { font-size: 12px; display: flex; align-items: center; gap: 5px; overflow: hidden; padding: 3px 8px 3px 2px; }
+        .message-cell { font-size: 12px; display: flex; align-items: center; gap: 5px; overflow: hidden; padding: 3px 8px 3px 2px; height: 28px; }
         .message-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .refs-container { display: flex; gap: 3px; flex-shrink: 0; align-items: center; }
         .ref-badge {
