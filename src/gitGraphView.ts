@@ -86,28 +86,28 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
                 refresh();
                 break;
             case 'editCommitMessage':
-                this._gitOps.editCommitMessage(message.commitHash, message.newMessage);
+                this._gitOps.editCommitMessage(message.commitHash!, message.newMessage!);
                 break;
             case 'cherryPick':
-                this._gitOps.cherryPickCommit(message.commitHash);
+                this._gitOps.cherryPickCommit(message.commitHash!);
                 break;
             case 'copyHash':
-                this._gitOps.copyCommitHash(message.commitHash);
+                this._gitOps.copyCommitHash(message.commitHash!);
                 break;
             case 'revertCommit':
-                this._gitOps.revertCommit(message.commitHash);
+                this._gitOps.revertCommit(message.commitHash!);
                 break;
             case 'resetToCommit':
-                this._gitOps.resetToCommit(message.commitHash);
+                this._gitOps.resetToCommit(message.commitHash!);
                 break;
             case 'squashCommits':
-                this._gitOps.squashCommits(message.hashes, message.parentHash);
+                this._gitOps.squashCommits(message.hashes!, message.parentHash!);
                 break;
             case 'cherryPickRange':
-                this._gitOps.cherryPickRange(message.hashes);
+                this._gitOps.cherryPickRange(message.hashes!);
                 break;
             case 'showCommitDetails':
-                this.showCommitDetails(message.commitHash);
+                this.showCommitDetails(message.commitHash!);
                 break;
         }
     }
