@@ -100,6 +100,9 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             case 'resetToCommit':
                 this._gitOps.resetToCommit(message.commitHash!);
                 break;
+            case 'dropCommit':
+                this._gitOps.dropCommit(message.commitHash!);
+                break;
             case 'squashCommits':
                 this._gitOps.squashCommits(message.hashes!, message.parentHash!);
                 break;

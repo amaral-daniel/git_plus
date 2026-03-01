@@ -174,6 +174,13 @@ export function getHtmlForWebview(webview: vscode.Webview, commits: GitCommit[],
             background-color: var(--vscode-list-hoverBackground);
             color: var(--vscode-list-hoverForeground);
         }
+        .context-menu-item--danger {
+            color: var(--vscode-errorForeground);
+        }
+        .context-menu-item--danger:hover {
+            background-color: var(--vscode-inputValidation-errorBackground);
+            color: var(--vscode-errorForeground);
+        }
         .context-menu-separator { height: 1px; background-color: var(--vscode-panel-border); margin: 3px 6px; }
         .message-edit-input {
             flex: 1;
