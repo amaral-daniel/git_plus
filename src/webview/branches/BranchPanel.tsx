@@ -107,14 +107,23 @@ export function BranchPanel({ branches }: Props) {
                 >
                     {!ctxMenu.branch.isRemote && (
                         <>
-                            <div className="ctx-item" onClick={() => handleAction('checkoutBranch', ctxMenu.branch.fullName)}>
+                            <div
+                                className="ctx-item"
+                                onClick={() => handleAction('checkoutBranch', ctxMenu.branch.fullName)}
+                            >
                                 Checkout
                             </div>
-                            <div className="ctx-item" onClick={() => handleAction('deleteBranch', ctxMenu.branch.fullName)}>
+                            <div
+                                className="ctx-item"
+                                onClick={() => handleAction('deleteBranch', ctxMenu.branch.fullName)}
+                            >
                                 Delete
                             </div>
                             <div className="ctx-sep" />
-                            <div className="ctx-item" onClick={() => handleAction('createBranch', ctxMenu.branch.fullName)}>
+                            <div
+                                className="ctx-item"
+                                onClick={() => handleAction('createBranch', ctxMenu.branch.fullName)}
+                            >
                                 Create New Branch Here
                             </div>
                             <div className="ctx-sep" />
