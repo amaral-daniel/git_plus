@@ -189,6 +189,31 @@ fs.writeFileSync(process.argv[2], ${JSON.stringify(newMessage + '\n')});
         });
     }
 
+    async dropCommit(commitHash: string) {
+        const confirm = await vscode.window.showWarningMessage(
+            `Are you sure you want to permanently drop commit ${commitHash.substring(0, 7)}? This cannot be undone.`,
+            'Drop',
+            'Cancel',
+        );
+        if (confirm !== 'Drop') {
+            return;
+        }
+
+        const cwd = this.getCwd();
+        if (!cwd) {
+            return;
+        }
+
+        cp.exec(`git rebase --onto ${commitHash}^ ${commitHash}`, { cwd }, (error, _stdout, stderr) => {
+            if (error) {
+                vscode.window.showErrorMessage(`Failed to drop commit: ${error.message}\n${stderr}`);
+                return;
+            }
+            vscode.window.showInformationMessage('Commit dropped successfully');
+            this.onRefresh();
+        });
+    }
+
     async resetToCommit(commitHash: string) {
         const resetType = await vscode.window.showQuickPick(
             [
