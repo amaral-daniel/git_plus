@@ -2,14 +2,26 @@
   "name": "git-lean",
   "publisher": "danieldev",
   "displayName": "Git Lean",
-  "description": "A minimalist git extension for VSCode",
+  "description": "A minimalist Git extension with a canvas-rendered commit graph and branch management — no bloat, no distractions.",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.75.0",
     "node": ">=24"
   },
   "categories": [
-    "Other"
+    "SCM Providers"
+  ],
+  "keywords": [
+    "git",
+    "git graph",
+    "git history",
+    "git log",
+    "branch",
+    "version control",
+    "scm",
+    "commit graph",
+    "squash",
+    "cherry-pick"
   ],
   "main": "./out/extension.js",
   "contributes": {

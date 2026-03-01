@@ -1,8 +1,8 @@
 # Git Lean
 
-A minimalist Git extension for Visual Studio Code.
+**A minimalist Git extension for Visual Studio Code.**
 
-Built out of frustration with the existing options: bloated UIs, cluttered panels, and features I never use. Git Lean does less, on purpose.
+Built out of frustration with bloated Git GUIs. Git Lean does less, on purpose — no tabs, no toolbars, no settings pages. Just the branch list and the commit graph, side by side.
 
 ---
 
@@ -10,67 +10,85 @@ Built out of frustration with the existing options: bloated UIs, cluttered panel
 
 ### Branch Panel
 
-A clean sidebar panel listing all local and remote branches.
+A clean sidebar listing all local and remote branches.
 
-- The currently checked-out branch is highlighted with a distinct icon and a `✓` marker
-- **Click** a branch to filter the commit tree to its history
-- **Right-click** a branch to access branch actions:
+- The active branch is highlighted with a distinct icon and `✓` marker
+- **Click** a branch to filter the commit graph to its history
+- **Right-click** a branch for quick actions:
   - Checkout
   - Delete
   - Create new branch from here
   - Rebase current branch onto this
   - Merge into current branch
+- Pull, push, and force-push controls in the panel toolbar
 
-### Commit Tree
+### Commit Graph
 
-A canvas-rendered git graph that visualises the commit history of your repository.
+A canvas-rendered git graph visualising your repository's full commit history.
 
 - Multi-lane graph with colour-coded branch lines
-- Ref badges inline with each commit (HEAD, local branches, remotes, tags)
-- The HEAD commit is rendered with a distinct ring marker
-- Selecting a branch in the panel filters the tree to that branch's history
+- Ref badges inline with each commit — HEAD, local branches, remotes, tags
+- HEAD commit rendered with a distinct ring marker
+- Filter the graph by selecting a branch in the panel
 - **Click** a commit to select it; **Shift-click** to select a range
 - **Right-click** a single commit to:
-  - Show full commit details (diff, author, dates)
-  - Copy hash
+  - View full commit details (diff, author, dates)
+  - Copy commit hash
   - Cherry-pick
   - Revert
-  - Reset to commit
+  - Reset to this commit (soft / mixed / hard)
   - Edit commit message inline
-- **Right-click** a range of commits to:
-  - Squash (when consecutive)
-  - Cherry-pick range
-
----
-
-## Running locally
-
-**Requirements:** Node.js, pnpm, and VS Code.
-
-```bash
-pnpm install
-pnpm run compile
-```
-
-Then open the project in VS Code and press `F5`. This launches an Extension Development Host: a second VS Code window with the extension loaded. Open any git repository in that window and the **Git Lean** panel will appear in the sidebar.
-
-To watch for changes during development:
-
-```bash
-pnpm run watch        # TypeScript
-pnpm run watch:webview  # React webview
-```
+- **Right-click** a selected range of commits to:
+  - Squash into a single commit
+  - Cherry-pick the entire range
 
 ---
 
 ## Why
 
-Most Git GUIs for VS Code are either too heavy or too opinionated. I wanted something that stays out of the way — no tabs, no toolbars, no settings pages. Just the branch list and the graph, side by side.
+Most Git extensions for VS Code are either too heavy or too opinionated. I wanted something that stays out of the way.
 
-The final straw was multi-commit operations. Squashing a range of commits directly from the graph (without dropping to the terminal) isn't available in Git Graph, isn't in the VS Code built-in, and appears to be locked behind GitLens Pro. That felt like a gap worth filling.
+The final straw was multi-commit operations. Squashing a range of commits directly from the graph — without dropping to the terminal — isn't available in Git Graph, isn't in the built-in VS Code Git support, and appears to be locked behind GitLens Pro. That felt like a gap worth filling.
+
+---
+
+## Requirements
+
+- Visual Studio Code **1.75.0** or later
+- Git installed and available in your `PATH`
+- An open folder that is a Git repository
+
+---
+
+## Getting Started
+
+1. Install **Git Lean** from the VS Code Marketplace
+2. Open a folder that contains a Git repository
+3. Click the **Git Lean** icon in the Activity Bar to open the panel
+4. The **Branches** view and **Commit Graph** appear side by side
+
+> **Tip:** Click any branch in the Branches panel to filter the graph to that branch's history.
+
+---
+
+## Extension Settings
+
+Git Lean has no configuration settings — everything works out of the box.
 
 ---
 
 ## Tech
 
 Built with the [VS Code Extension API](https://code.visualstudio.com/api), TypeScript, React 19, and the Canvas API for graph rendering. No external runtime dependencies.
+
+---
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, architecture notes, and the pull request process.
+
+---
+
+## License
+
+See [LICENSE](LICENSE) for terms.
