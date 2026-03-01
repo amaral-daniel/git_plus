@@ -296,7 +296,7 @@ export function BranchPanel({ branches }: Props) {
                 vscode.postMessage({ command: 'selectBranch', branchName: null });
             } else {
                 setSelected(branch.fullName);
-                vscode.postMessage({ command: 'selectBranch', branchName: branch.name });
+                vscode.postMessage({ command: 'selectBranch', branchName: branch.fullName });
             }
         },
         [selected],
@@ -402,18 +402,22 @@ export function BranchPanel({ branches }: Props) {
                 >
                     {!ctxMenu.branch.isRemote && (
                         <>
-                            <div
-                                className="ctx-item"
-                                onClick={() => handleAction('checkoutBranch', ctxMenu.branch.fullName)}
-                            >
-                                Checkout
-                            </div>
-                            <div
-                                className="ctx-item"
-                                onClick={() => handleAction('deleteBranch', ctxMenu.branch.fullName)}
-                            >
-                                Delete
-                            </div>
+                            {!ctxMenu.branch.isHead && (
+                                <div
+                                    className="ctx-item"
+                                    onClick={() => handleAction('checkoutBranch', ctxMenu.branch.fullName)}
+                                >
+                                    Checkout
+                                </div>
+                            )}
+                            {!ctxMenu.branch.isHead && (
+                                <div
+                                    className="ctx-item"
+                                    onClick={() => handleAction('deleteBranch', ctxMenu.branch.fullName)}
+                                >
+                                    Delete
+                                </div>
+                            )}
                             <div className="ctx-sep" />
                             <div
                                 className="ctx-item"
@@ -424,12 +428,22 @@ export function BranchPanel({ branches }: Props) {
                             <div className="ctx-sep" />
                         </>
                     )}
-                    <div className="ctx-item" onClick={() => handleAction('rebaseBranch', ctxMenu.branch.fullName)}>
-                        Rebase Current onto This
-                    </div>
-                    <div className="ctx-item" onClick={() => handleAction('mergeBranch', ctxMenu.branch.fullName)}>
-                        Merge into Current
-                    </div>
+                    {!ctxMenu.branch.isHead && (
+                        <>
+                            <div
+                                className="ctx-item"
+                                onClick={() => handleAction('rebaseBranch', ctxMenu.branch.fullName)}
+                            >
+                                Rebase Current onto This
+                            </div>
+                            <div
+                                className="ctx-item"
+                                onClick={() => handleAction('mergeBranch', ctxMenu.branch.fullName)}
+                            >
+                                Merge into Current
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
         </div>

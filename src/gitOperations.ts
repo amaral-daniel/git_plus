@@ -30,7 +30,7 @@ export class GitOperations {
             }
 
             const branchArg = filterBranch ? ` ${filterBranch}` : '';
-            const gitCommand = `git log${branchArg} --pretty=format:"%H|%h|%P|%an|%ai|%D|%s" --date-order`;
+            const gitCommand = `git log --pretty=format:"%H|%h|%P|%an|%ai|%D|%s" --date-order${branchArg}`;
 
             cp.exec(gitCommand, { cwd }, (error, stdout) => {
                 if (error) {

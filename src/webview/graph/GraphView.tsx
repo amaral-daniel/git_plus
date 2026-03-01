@@ -60,9 +60,22 @@ export function GraphView({ commits }: Props) {
     const canvasWidth = maxLane * LANE_WIDTH + 12;
 
     const headCommitHash = useMemo(
-        () => (commits.find((c) => c.refs.some((r) => r.startsWith('HEAD -> ') || r === 'HEAD')) ?? commits[0])?.hash,
+        () => commits.find((c) => c.refs.some((r) => r.startsWith('HEAD -> ') || r === 'HEAD'))?.hash,
         [commits],
     );
+
+    const headBranchHashes = useMemo(() => {
+        const commitMap = new Map(commits.map((c) => [c.hash, c]));
+        const headCommit = headCommitHash ? commitMap.get(headCommitHash) : undefined;
+        if (!headCommit) return new Set<string>();
+        const set = new Set<string>();
+        let current: (typeof commits)[0] | undefined = headCommit;
+        while (current) {
+            set.add(current.hash);
+            current = current.parents[0] ? commitMap.get(current.parents[0]) : undefined;
+        }
+        return set;
+    }, [commits, headCommitHash]);
 
     const closeMenus = useCallback(() => {
         setSingleMenu(null);
@@ -210,28 +223,36 @@ export function GraphView({ commits }: Props) {
                     style={{ display: 'block', left: singleMenu.x, top: singleMenu.y }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    <div className="context-menu-item" onClick={() => handleSingleAction('editCommitMessage')}>
-                        Edit Commit Message
-                    </div>
-                    <div className="context-menu-item" onClick={() => handleSingleAction('cherryPick')}>
-                        Cherry Pick
-                    </div>
+                    {headBranchHashes.has(singleMenu.hash) && (
+                        <div className="context-menu-item" onClick={() => handleSingleAction('editCommitMessage')}>
+                            Edit Commit Message
+                        </div>
+                    )}
+                    {!headBranchHashes.has(singleMenu.hash) && (
+                        <div className="context-menu-item" onClick={() => handleSingleAction('cherryPick')}>
+                            Cherry Pick
+                        </div>
+                    )}
                     <div className="context-menu-separator" />
                     <div className="context-menu-item" onClick={() => handleSingleAction('copyHash')}>
                         Copy Hash
                     </div>
-                    <div className="context-menu-item" onClick={() => handleSingleAction('revertCommit')}>
-                        Revert Commit
-                    </div>
-                    <div className="context-menu-item" onClick={() => handleSingleAction('resetToCommit')}>
-                        Reset to Commit
-                    </div>
-                    <div
-                        className="context-menu-item context-menu-item--danger"
-                        onClick={() => handleSingleAction('dropCommit')}
-                    >
-                        Drop Commit
-                    </div>
+                    {headBranchHashes.has(singleMenu.hash) && (
+                        <>
+                            <div className="context-menu-item" onClick={() => handleSingleAction('revertCommit')}>
+                                Revert Commit
+                            </div>
+                            <div className="context-menu-item" onClick={() => handleSingleAction('resetToCommit')}>
+                                Reset to Commit
+                            </div>
+                            <div
+                                className="context-menu-item context-menu-item--danger"
+                                onClick={() => handleSingleAction('dropCommit')}
+                            >
+                                Drop Commit
+                            </div>
+                        </>
+                    )}
                     <div className="context-menu-separator" />
                     <div className="context-menu-item" onClick={() => handleSingleAction('showCommitDetails')}>
                         Show more details
@@ -245,17 +266,20 @@ export function GraphView({ commits }: Props) {
                     style={{ display: 'block', left: rangeMenu.x, top: rangeMenu.y }}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {rangeMenu.consecutive && (
-                        <>
-                            <div className="context-menu-item" onClick={() => handleRangeAction('squashCommits')}>
-                                Squash Commits
-                            </div>
-                            <div className="context-menu-separator" />
-                        </>
+                    {rangeMenu.consecutive &&
+                        rangeMenu.sortedIndices.every((i) => headBranchHashes.has(filteredCommits[i]?.hash)) && (
+                            <>
+                                <div className="context-menu-item" onClick={() => handleRangeAction('squashCommits')}>
+                                    Squash Commits
+                                </div>
+                                <div className="context-menu-separator" />
+                            </>
+                        )}
+                    {rangeMenu.sortedIndices.some((i) => !headBranchHashes.has(filteredCommits[i]?.hash)) && (
+                        <div className="context-menu-item" onClick={() => handleRangeAction('cherryPickRange')}>
+                            Cherry-pick Commits
+                        </div>
                     )}
-                    <div className="context-menu-item" onClick={() => handleRangeAction('cherryPickRange')}>
-                        Cherry-pick Commits
-                    </div>
                 </div>
             )}
         </div>
