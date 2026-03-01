@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Background -->
+  <rect width="128" height="128" rx="20" fill="#0D1117"/>
+
+  <!-- Main branch vertical line -->
+  <line x1="50" y1="20" x2="50" y2="108" stroke="#2AD4A8" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Feature branch: split out -->
+  <line x1="50" y1="46" x2="82" y2="68" stroke="#5B9CF6" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Feature branch: merge back -->
+  <line x1="82" y1="68" x2="50" y2="90" stroke="#5B9CF6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Oldest commit -->
+  <circle cx="50" cy="108" r="5" fill="#2AD4A8"/>
+
+  <!-- Merge commit -->
+  <circle cx="50" cy="90" r="5" fill="#2AD4A8"/>
+
+  <!-- Branch split commit -->
+  <circle cx="50" cy="46" r="5" fill="#2AD4A8"/>
+
+  <!-- Feature commit -->
+  <circle cx="82" cy="68" r="5.5" fill="#5B9CF6"/>
+
+  <!-- HEAD commit — white dot with teal ring -->
+  <circle cx="50" cy="20" r="9" fill="none" stroke="#2AD4A8" stroke-width="2"/>
+  <circle cx="50" cy="20" r="4.5" fill="#FFFFFF"/>
+</svg>

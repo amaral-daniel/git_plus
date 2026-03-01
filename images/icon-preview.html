@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Git Lean — Icon Preview</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a1a;
+      color: #ccc;
+      font-family: ui-monospace, 'SF Mono', 'Fira Code', monospace;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 48px;
+      padding: 48px;
+    }
+
+    h1 {
+      font-size: 13px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #555;
+      font-weight: 400;
+    }
+
+    .row {
+      display: flex;
+      align-items: flex-end;
+      gap: 40px;
+    }
+
+    .swatch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .swatch img {
+      display: block;
+      image-rendering: pixelated;
+    }
+
+    .swatch span {
+      font-size: 11px;
+      color: #444;
+      letter-spacing: 0.08em;
+    }
+
+    .on-light {
+      background: #f0f0f0;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .sidebar-sim {
+      background: #252526;
+      border-radius: 4px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 48px;
+    }
+
+    .sidebar-icon {
+      width: 24px;
+      height: 24px;
+      margin: 0 auto;
+      opacity: 0.5;
+    }
+
+    .sidebar-icon.active {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Git Lean · Icon Preview</h1>
+
+  <!-- Main sizes -->
+  <div class="row">
+    <div class="swatch">
+      <img src="icon.svg" width="128" height="128" alt="128px">
+      <span>128px</span>
+    </div>
+    <div class="swatch">
+      <img src="icon.svg" width="64" height="64" alt="64px">
+      <span>64px</span>
+    </div>
+    <div class="swatch">
+      <img src="icon.svg" width="48" height="48" alt="48px">
+      <span>48px</span>
+    </div>
+    <div class="swatch">
+      <img src="icon.svg" width="32" height="32" alt="32px">
+      <span>32px</span>
+    </div>
+    <div class="swatch">
+      <img src="icon.svg" width="24" height="24" alt="24px">
+      <span>24px</span>
+    </div>
+    <div class="swatch">
+      <img src="icon.svg" width="16" height="16" alt="16px">
+      <span>16px</span>
+    </div>
+  </div>
+
+  <!-- Light background check -->
+  <div class="row">
+    <div class="swatch">
+      <div class="on-light">
+        <img src="icon.svg" width="128" height="128" alt="on light">
+      </div>
+      <span>on light bg</span>
+    </div>
+    <div class="swatch">
+      <div class="on-light">
+        <img src="icon.svg" width="64" height="64" alt="on light small">
+      </div>
+      <span>on light bg · 64px</span>
+    </div>
+  </div>
+
+  <!-- Activity bar simulation -->
+  <div class="row">
+    <div class="swatch">
+      <div class="sidebar-sim">
+        <img class="sidebar-icon" src="icon.svg" width="24" height="24" alt="">
+        <img class="sidebar-icon active" src="icon.svg" width="24" height="24" alt="">
+        <img class="sidebar-icon" src="icon.svg" width="24" height="24" alt="">
+      </div>
+      <span>activity bar</span>
+    </div>
+  </div>
+
+</body>
+</html>
