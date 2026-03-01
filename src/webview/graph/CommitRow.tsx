@@ -1,16 +1,11 @@
 import React, { useRef, useEffect } from 'react';
 import { GitCommit } from '../types';
-import { RowGraphData } from './graphRenderer';
-import { GraphCanvas } from './GraphCanvas';
 
 interface Props {
     commit: GitCommit;
-    lane: number;
-    canvasWidth: number;
     headCommitHash: string | undefined;
     isSelected: boolean;
     isEditing: boolean;
-    rowGraphData: RowGraphData;
     onClick: (shiftKey: boolean) => void;
     onContextMenu: (e: React.MouseEvent) => void;
     onEditConfirm: (newMessage: string) => void;
@@ -83,18 +78,16 @@ function RefBadges({ refs }: { refs: string[] }) {
 
 export const CommitRow = React.memo(function CommitRow({
     commit,
-    lane,
-    canvasWidth,
     headCommitHash,
     isSelected,
     isEditing,
-    rowGraphData,
     onClick,
     onContextMenu,
     onEditConfirm,
     onEditCancel,
 }: Props) {
     const inputRef = useRef<HTMLInputElement>(null);
+    const isHead = commit.hash === headCommitHash;
 
     useEffect(() => {
         if (isEditing) {
@@ -111,12 +104,17 @@ export const CommitRow = React.memo(function CommitRow({
             onContextMenu={onContextMenu}
         >
             <td className="graph-cell">
-                <GraphCanvas
-                    lane={lane}
-                    canvasWidth={canvasWidth}
-                    isHead={commit.hash === headCommitHash}
-                    rowGraphData={rowGraphData}
-                />
+                <svg width="20" height="28" style={{ display: 'block' }}>
+                    <line x1="10" y1="0" x2="10" y2="28" stroke="#3d9fd4" strokeWidth="2" />
+                    {isHead ? (
+                        <>
+                            <circle cx="10" cy="14" r="5" fill="none" stroke="#3d9fd4" strokeWidth="2" />
+                            <circle cx="10" cy="14" r="2" fill="#3d9fd4" />
+                        </>
+                    ) : (
+                        <circle cx="10" cy="14" r="5" fill="#3d9fd4" />
+                    )}
+                </svg>
             </td>
             <td className="message-cell" title={commit.message}>
                 <RefBadges refs={commit.refs} />
