@@ -23,6 +23,7 @@
     "squash",
     "cherry-pick"
   ],
+  "icon": "images/icon.png",
   "main": "./out/extension.js",
   "contributes": {
     "viewsContainers": {
