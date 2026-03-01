@@ -3,6 +3,14 @@ import * as cp from 'child_process';
 import { GitOperations } from './gitOperations';
 import { getHtmlForWebview, getCommitDetailsHtml } from './webviewContent';
 
+interface WebviewMessage {
+    command: string;
+    commitHash?: string;
+    newMessage?: string;
+    hashes?: string[];
+    parentHash?: string;
+}
+
 export class GitGraphViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'gitLeanGraphView';
     private static currentPanel: vscode.WebviewPanel | undefined;
@@ -72,7 +80,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
         this.updateWebview(webviewView.webview);
     }
 
-    private handleMessage(message: any, refresh: () => void) {
+    private handleMessage(message: WebviewMessage, refresh: () => void) {
         switch (message.command) {
             case 'refresh':
                 refresh();

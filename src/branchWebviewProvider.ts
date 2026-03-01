@@ -1,6 +1,11 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
 
+interface WebviewMessage {
+    command: string;
+    branchName: string;
+}
+
 interface Branch {
     name: string;
     fullName: string;
@@ -66,7 +71,7 @@ export class BranchWebviewProvider implements vscode.WebviewViewProvider {
         this._view.webview.html = this.getHtml(this._view.webview, branches);
     }
 
-    private handleMessage(message: any) {
+    private handleMessage(message: WebviewMessage) {
         if (message.command === 'selectBranch') {
             this._onBranchSelected?.(message.branchName);
             return;

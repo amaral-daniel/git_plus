@@ -119,11 +119,19 @@ fs.writeFileSync(process.argv[2], ${JSON.stringify(newMessage + '\n')});
             fs.writeFileSync(seqEditorPath, seqEditorScript);
             fs.writeFileSync(msgEditorPath, msgEditorScript);
 
-            const env = { ...process.env, GIT_SEQUENCE_EDITOR: `node "${seqEditorPath}"`, GIT_EDITOR: `node "${msgEditorPath}"` };
+            const env = {
+                ...process.env,
+                GIT_SEQUENCE_EDITOR: `node "${seqEditorPath}"`,
+                GIT_EDITOR: `node "${msgEditorPath}"`,
+            };
 
             cp.exec(`git rebase -i ${commitHash}~1`, { cwd, env }, (error, _stdout, stderr) => {
-                try { fs.unlinkSync(seqEditorPath); } catch {}
-                try { fs.unlinkSync(msgEditorPath); } catch {}
+                try {
+                    fs.unlinkSync(seqEditorPath);
+                } catch {}
+                try {
+                    fs.unlinkSync(msgEditorPath);
+                } catch {}
                 if (error) {
                     cp.exec('git rebase --abort', { cwd }, () => {});
                     vscode.window.showErrorMessage(`Failed to edit commit message: ${error.message}\n${stderr}`);
