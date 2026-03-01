@@ -1,34 +1,32 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
 
 jobs:
-  ci:
-    name: Lint, Format & Build
-    runs-on: ubuntu-latest
+    ci:
+        name: Lint, Format & Build
+        runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '20'
+                  cache: 'pnpm'
 
-      - uses: pnpm/action-setup@v4
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
+            - name: Check formatting
+              run: pnpm run format:check
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+            - name: Lint
+              run: pnpm run lint
 
-      - name: Check formatting
-        run: pnpm run format:check
-
-      - name: Lint
-        run: pnpm run lint
-
-      - name: Build
-        run: pnpm run compile
+            - name: Build
+              run: pnpm run compile
