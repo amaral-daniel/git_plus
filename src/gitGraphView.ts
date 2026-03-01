@@ -3,6 +3,14 @@ import * as cp from 'child_process';
 import { GitOperations } from './gitOperations';
 import { getHtmlForWebview, getCommitDetailsHtml } from './webviewContent';
 
+interface WebviewMessage {
+    command: string;
+    commitHash?: string;
+    newMessage?: string;
+    hashes?: string[];
+    parentHash?: string;
+}
+
 export class GitGraphViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'gitLeanGraphView';
     private static currentPanel: vscode.WebviewPanel | undefined;
@@ -72,34 +80,34 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
         this.updateWebview(webviewView.webview);
     }
 
-    private handleMessage(message: any, refresh: () => void) {
+    private handleMessage(message: WebviewMessage, refresh: () => void) {
         switch (message.command) {
             case 'refresh':
                 refresh();
                 break;
             case 'editCommitMessage':
-                this._gitOps.editCommitMessage(message.commitHash, message.newMessage);
+                this._gitOps.editCommitMessage(message.commitHash!, message.newMessage!);
                 break;
             case 'cherryPick':
-                this._gitOps.cherryPickCommit(message.commitHash);
+                this._gitOps.cherryPickCommit(message.commitHash!);
                 break;
             case 'copyHash':
-                this._gitOps.copyCommitHash(message.commitHash);
+                this._gitOps.copyCommitHash(message.commitHash!);
                 break;
             case 'revertCommit':
-                this._gitOps.revertCommit(message.commitHash);
+                this._gitOps.revertCommit(message.commitHash!);
                 break;
             case 'resetToCommit':
-                this._gitOps.resetToCommit(message.commitHash);
+                this._gitOps.resetToCommit(message.commitHash!);
                 break;
             case 'squashCommits':
-                this._gitOps.squashCommits(message.hashes, message.parentHash);
+                this._gitOps.squashCommits(message.hashes!, message.parentHash!);
                 break;
             case 'cherryPickRange':
-                this._gitOps.cherryPickRange(message.hashes);
+                this._gitOps.cherryPickRange(message.hashes!);
                 break;
             case 'showCommitDetails':
-                this.showCommitDetails(message.commitHash);
+                this.showCommitDetails(message.commitHash!);
                 break;
         }
     }

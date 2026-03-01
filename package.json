@@ -5,7 +5,8 @@
   "description": "A minimalist git extension for VSCode",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.75.0",
+    "node": ">=24"
   },
   "categories": [
     "Other"
@@ -146,7 +147,7 @@
     "format:check": "prettier --check src"
   },
   "devDependencies": {
-    "@types/node": "^18.0.0",
+    "@types/node": "^24.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/vscode": "^1.75.0",
