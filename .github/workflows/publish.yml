@@ -1,0 +1,76 @@
+name: Publish
+
+on:
+    push:
+    workflow_dispatch:
+
+permissions:
+    contents: write
+
+jobs:
+    publish:
+        name: Publish to VS Code Marketplace
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '24'
+                  cache: 'pnpm'
+
+            - name: Check if version is already tagged
+              id: version
+              run: |
+                  VERSION=$(node -p "require('./package.json').version")
+                  echo "value=$VERSION" >> $GITHUB_OUTPUT
+
+                  if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+                    echo "ERROR: Version '$VERSION' is not in x.x.x format" >&2
+                    exit 1
+                  fi
+
+                  if git tag --list "v$VERSION" | grep -q .; then
+                    echo "tagged=true" >> $GITHUB_OUTPUT
+                  else
+                    echo "tagged=false" >> $GITHUB_OUTPUT
+                  fi
+
+                  LATEST_TAG=$(git tag --list 'v*' | sort -V | tail -1)
+                  if [ -n "$LATEST_TAG" ]; then
+                    LATEST_VERSION="${LATEST_TAG#v}"
+                    if [ "$(printf '%s\n' "$LATEST_VERSION" "$VERSION" | sort -V | tail -1)" != "$VERSION" ] || [ "$LATEST_VERSION" = "$VERSION" ]; then
+                      echo "ERROR: Version '$VERSION' must be greater than latest tag '$LATEST_TAG'" >&2
+                      exit 1
+                    fi
+                  fi
+
+            - name: Install dependencies
+              if: steps.version.outputs.tagged == 'false'
+              run: pnpm install --frozen-lockfile
+
+            - name: Build
+              if: steps.version.outputs.tagged == 'false'
+              run: pnpm run compile
+
+            - name: Publish to VS Code Marketplace
+              if: steps.version.outputs.tagged == 'false'
+              run: pnpm dlx @vscode/vsce publish --no-dependencies
+              env:
+                  VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+            - name: Publish to Open VSX
+              if: steps.version.outputs.tagged == 'false'
+              run: pnpm dlx ovsx publish --no-dependencies
+              env:
+                  OVSX_PAT: ${{ secrets.OVSX_PAT }}
+
+            - name: Tag release
+              if: steps.version.outputs.tagged == 'false'
+              run: |
+                  git tag "v${{ steps.version.outputs.value }}"
+                  git push origin "v${{ steps.version.outputs.value }}"

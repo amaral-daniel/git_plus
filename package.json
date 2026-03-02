@@ -1,179 +1,183 @@
 {
-  "name": "git-lean",
-  "publisher": "danieldev",
-  "displayName": "Git Lean",
-  "description": "A minimalist Git extension with a canvas-rendered commit graph and branch management — no bloat, no distractions.",
-  "version": "0.0.1",
-  "engines": {
-    "vscode": "^1.75.0",
-    "node": ">=24"
-  },
-  "categories": [
-    "SCM Providers"
-  ],
-  "keywords": [
-    "git",
-    "git graph",
-    "git history",
-    "git log",
-    "branch",
-    "version control",
-    "scm",
-    "commit graph",
-    "squash",
-    "cherry-pick"
-  ],
-  "icon": "images/icon.png",
-  "main": "./out/extension.js",
-  "contributes": {
-    "viewsContainers": {
-      "panel": [
-        {
-          "id": "git-lean",
-          "title": "Git Lean",
-          "icon": "$(git-branch)"
-        }
-      ]
+    "name": "git-lean",
+    "publisher": "danieldev",
+    "displayName": "Git Lean",
+    "description": "A minimalist Git extension with a canvas-rendered commit graph and branch management — no bloat, no distractions.",
+    "version": "0.0.3",
+    "engines": {
+        "vscode": "^1.75.0",
+        "node": ">=24"
     },
-    "views": {
-      "git-lean": [
-        {
-          "id": "gitLeanBranchView",
-          "name": "Branches",
-          "type": "webview"
-        },
-        {
-          "id": "gitLeanGraphView",
-          "name": "Tree",
-          "type": "webview"
-        }
-      ]
+    "categories": [
+        "SCM Providers"
+    ],
+    "keywords": [
+        "git",
+        "git graph",
+        "git history",
+        "git log",
+        "branch",
+        "version control",
+        "scm",
+        "commit graph",
+        "squash",
+        "cherry-pick"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/amaral-daniel/git-lean"
     },
-    "menus": {
-      "view/title": [
-        {
-          "command": "git-lean.pull",
-          "when": "view == gitLeanBranchView",
-          "group": "navigation@1"
+    "icon": "images/icon.png",
+    "main": "./out/extension.js",
+    "contributes": {
+        "viewsContainers": {
+            "panel": [
+                {
+                    "id": "git-lean",
+                    "title": "Git Lean",
+                    "icon": "$(git-branch)"
+                }
+            ]
         },
-        {
-          "command": "git-lean.push",
-          "when": "view == gitLeanBranchView",
-          "group": "navigation@2"
+        "views": {
+            "git-lean": [
+                {
+                    "id": "gitLeanBranchView",
+                    "name": "Branches",
+                    "type": "webview"
+                },
+                {
+                    "id": "gitLeanGraphView",
+                    "name": "Tree",
+                    "type": "webview"
+                }
+            ]
         },
-        {
-          "command": "git-lean.pushForce",
-          "when": "view == gitLeanBranchView",
-          "group": "navigation@3"
+        "menus": {
+            "view/title": [
+                {
+                    "command": "git-lean.pull",
+                    "when": "view == gitLeanBranchView",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "git-lean.push",
+                    "when": "view == gitLeanBranchView",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "git-lean.pushForce",
+                    "when": "view == gitLeanBranchView",
+                    "group": "navigation@3"
+                },
+                {
+                    "command": "git-lean.refreshBranches",
+                    "when": "view == gitLeanBranchView",
+                    "group": "navigation@4"
+                }
+            ]
         },
-        {
-          "command": "git-lean.refreshBranches",
-          "when": "view == gitLeanBranchView",
-          "group": "navigation@4"
-        }
-      ]
+        "commands": [
+            {
+                "command": "git-lean.showGraph",
+                "title": "Git Lean: Show Graph",
+                "category": "Git Lean"
+            },
+            {
+                "command": "git-lean.editCommitMessage",
+                "title": "Git Lean: Edit Commit Message",
+                "category": "Git Lean"
+            },
+            {
+                "command": "git-lean.cherryPick",
+                "title": "Git Lean: Cherry Pick",
+                "category": "Git Lean"
+            },
+            {
+                "command": "git-lean.copyHash",
+                "title": "Git Lean: Copy Hash",
+                "category": "Git Lean"
+            },
+            {
+                "command": "git-lean.revertCommit",
+                "title": "Git Lean: Revert Commit",
+                "category": "Git Lean"
+            },
+            {
+                "command": "git-lean.resetToCommit",
+                "title": "Git Lean: Reset to Commit",
+                "category": "Git Lean"
+            },
+            {
+                "command": "git-lean.checkoutBranch",
+                "title": "Checkout Branch"
+            },
+            {
+                "command": "git-lean.deleteBranch",
+                "title": "Delete Branch"
+            },
+            {
+                "command": "git-lean.pull",
+                "title": "Pull",
+                "icon": "$(arrow-down)"
+            },
+            {
+                "command": "git-lean.push",
+                "title": "Push",
+                "icon": "$(arrow-up)"
+            },
+            {
+                "command": "git-lean.pushForce",
+                "title": "Force Push",
+                "icon": "$(repo-force-push)"
+            },
+            {
+                "command": "git-lean.refreshBranches",
+                "title": "Refresh Branches",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "git-lean.createBranch",
+                "title": "Create New Branch Here"
+            },
+            {
+                "command": "git-lean.rebaseBranch",
+                "title": "Rebase Current Branch onto This"
+            },
+            {
+                "command": "git-lean.mergeBranch",
+                "title": "Merge Branch into Current"
+            }
+        ]
     },
-    "commands": [
-      {
-        "command": "git-lean.showGraph",
-        "title": "Git Lean: Show Graph",
-        "category": "Git Lean"
-      },
-      {
-        "command": "git-lean.editCommitMessage",
-        "title": "Git Lean: Edit Commit Message",
-        "category": "Git Lean"
-      },
-      {
-        "command": "git-lean.cherryPick",
-        "title": "Git Lean: Cherry Pick",
-        "category": "Git Lean"
-      },
-      {
-        "command": "git-lean.copyHash",
-        "title": "Git Lean: Copy Hash",
-        "category": "Git Lean"
-      },
-      {
-        "command": "git-lean.revertCommit",
-        "title": "Git Lean: Revert Commit",
-        "category": "Git Lean"
-      },
-      {
-        "command": "git-lean.resetToCommit",
-        "title": "Git Lean: Reset to Commit",
-        "category": "Git Lean"
-      },
-      {
-        "command": "git-lean.checkoutBranch",
-        "title": "Checkout Branch"
-      },
-      {
-        "command": "git-lean.deleteBranch",
-        "title": "Delete Branch"
-      },
-      {
-        "command": "git-lean.pull",
-        "title": "Pull",
-        "icon": "$(arrow-down)"
-      },
-      {
-        "command": "git-lean.push",
-        "title": "Push",
-        "icon": "$(arrow-up)"
-      },
-      {
-        "command": "git-lean.pushForce",
-        "title": "Force Push",
-        "icon": "$(repo-force-push)"
-      },
-      {
-        "command": "git-lean.refreshBranches",
-        "title": "Refresh Branches",
-        "icon": "$(refresh)"
-      },
-      {
-        "command": "git-lean.createBranch",
-        "title": "Create New Branch Here"
-      },
-      {
-        "command": "git-lean.rebaseBranch",
-        "title": "Rebase Current Branch onto This"
-      },
-      {
-        "command": "git-lean.mergeBranch",
-        "title": "Merge Branch into Current"
-      }
-    ]
-  },
-  "packageManager": "pnpm@10.30.0",
-  "scripts": {
-    "vscode:prepublish": "pnpm run compile",
-    "compile": "tsc -p ./ && pnpm run bundle-webview",
-    "bundle-webview": "esbuild src/webview/graph/index.tsx src/webview/commitDetails/index.tsx src/webview/branches/index.tsx --bundle --outdir=out/webview --format=iife --target=es2020 --jsx=automatic",
-    "watch": "tsc -watch -p ./",
-    "watch:webview": "esbuild src/webview/graph/index.tsx src/webview/commitDetails/index.tsx src/webview/branches/index.tsx --bundle --outdir=out/webview --format=iife --target=es2020 --jsx=automatic --watch",
-    "pretest": "pnpm run compile",
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix",
-    "format": "prettier --write src",
-    "format:check": "prettier --check src"
-  },
-  "devDependencies": {
-    "@types/node": "^24.0.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@types/vscode": "^1.75.0",
-    "esbuild": "^0.27.3",
-    "eslint": "^9.0.0",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-react-hooks": "^5.0.0",
-    "prettier": "^3.8.1",
-    "typescript": "^5.0.0",
-    "typescript-eslint": "^8.0.0"
-  },
-  "dependencies": {
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4"
-  }
+    "packageManager": "pnpm@10.30.0",
+    "scripts": {
+        "vscode:prepublish": "pnpm run compile",
+        "compile": "tsc -p ./ && pnpm run bundle-webview",
+        "bundle-webview": "esbuild src/webview/graph/index.tsx src/webview/commitDetails/index.tsx src/webview/branches/index.tsx --bundle --outdir=out/webview --format=iife --target=es2020 --jsx=automatic",
+        "watch": "tsc -watch -p ./",
+        "watch:webview": "esbuild src/webview/graph/index.tsx src/webview/commitDetails/index.tsx src/webview/branches/index.tsx --bundle --outdir=out/webview --format=iife --target=es2020 --jsx=automatic --watch",
+        "pretest": "pnpm run compile",
+        "lint": "eslint src",
+        "lint:fix": "eslint src --fix",
+        "format": "prettier --write src",
+        "format:check": "prettier --check src"
+    },
+    "devDependencies": {
+        "@types/node": "^24.0.0",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "@types/vscode": "^1.75.0",
+        "esbuild": "^0.27.3",
+        "eslint": "^9.0.0",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-react-hooks": "^5.0.0",
+        "prettier": "^3.8.1",
+        "typescript": "^5.0.0",
+        "typescript-eslint": "^8.0.0"
+    },
+    "dependencies": {
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4"
+    }
 }
