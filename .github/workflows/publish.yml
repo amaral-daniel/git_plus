@@ -30,10 +30,25 @@ jobs:
               run: |
                   VERSION=$(node -p "require('./package.json').version")
                   echo "value=$VERSION" >> $GITHUB_OUTPUT
+
+                  if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+                    echo "ERROR: Version '$VERSION' is not in x.x.x format" >&2
+                    exit 1
+                  fi
+
                   if git tag --list "v$VERSION" | grep -q .; then
                     echo "tagged=true" >> $GITHUB_OUTPUT
                   else
                     echo "tagged=false" >> $GITHUB_OUTPUT
+                  fi
+
+                  LATEST_TAG=$(git tag --list 'v*' | sort -V | tail -1)
+                  if [ -n "$LATEST_TAG" ]; then
+                    LATEST_VERSION="${LATEST_TAG#v}"
+                    if [ "$(printf '%s\n' "$LATEST_VERSION" "$VERSION" | sort -V | tail -1)" != "$VERSION" ] || [ "$LATEST_VERSION" = "$VERSION" ]; then
+                      echo "ERROR: Version '$VERSION' must be greater than latest tag '$LATEST_TAG'" >&2
+                      exit 1
+                    fi
                   fi
 
             - name: Install dependencies
