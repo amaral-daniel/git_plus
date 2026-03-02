@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { GitCommit } from '../types';
 import { vscode } from '../vscodeApi';
 import { CommitRow } from './CommitRow';
@@ -65,6 +65,20 @@ export function GraphView({ commits }: Props) {
         setSingleMenu(null);
         setRangeMenu(null);
     }, []);
+
+    const ctxMenuRef = useRef<HTMLDivElement>(null);
+
+    useLayoutEffect(() => {
+        const el = ctxMenuRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        if (rect.right > window.innerWidth) {
+            el.style.left = `${window.innerWidth - rect.width - 4}px`;
+        }
+        if (rect.bottom > window.innerHeight) {
+            el.style.top = `${window.innerHeight - rect.height - 4}px`;
+        }
+    }, [singleMenu, rangeMenu]);
 
     const handleRowClick = useCallback(
         (index: number, shiftKey: boolean) => {
@@ -199,7 +213,10 @@ export function GraphView({ commits }: Props) {
             )}
 
             {singleMenu && (
+                <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={closeMenus} />
                 <div
+                    ref={ctxMenuRef}
                     className="context-menu"
                     style={{ display: 'block', left: singleMenu.x, top: singleMenu.y }}
                     onClick={(e) => e.stopPropagation()}
@@ -231,10 +248,14 @@ export function GraphView({ commits }: Props) {
                         Show more details
                     </div>
                 </div>
+                </>
             )}
 
             {rangeMenu && (
+                <>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={closeMenus} />
                 <div
+                    ref={ctxMenuRef}
                     className="context-menu"
                     style={{ display: 'block', left: rangeMenu.x, top: rangeMenu.y }}
                     onClick={(e) => e.stopPropagation()}
@@ -251,6 +272,7 @@ export function GraphView({ commits }: Props) {
                         Cherry-pick Commits
                     </div>
                 </div>
+                </>
             )}
         </div>
     );

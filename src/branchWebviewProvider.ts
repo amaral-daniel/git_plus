@@ -206,7 +206,7 @@ body {
     border: 1px solid var(--vscode-menu-border, var(--vscode-panel-border));
     border-radius: 6px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.15);
-    z-index: 50;
+    z-index: 1000;
     min-width: 190px;
     padding: 4px 0;
     overflow: hidden;
