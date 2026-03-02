@@ -44,11 +44,17 @@ jobs:
               if: steps.version.outputs.tagged == 'false'
               run: pnpm run compile
 
-            - name: Publish to marketplace
+            - name: Publish to VS Code Marketplace
               if: steps.version.outputs.tagged == 'false'
               run: pnpm dlx @vscode/vsce publish --no-dependencies
               env:
                   VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+            - name: Publish to Open VSX
+              if: steps.version.outputs.tagged == 'false'
+              run: pnpm dlx ovsx publish --no-dependencies
+              env:
+                  OVSX_PAT: ${{ secrets.OVSX_PAT }}
 
             - name: Tag release
               if: steps.version.outputs.tagged == 'false'
