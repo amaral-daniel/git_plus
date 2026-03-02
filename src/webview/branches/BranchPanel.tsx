@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { vscode } from '../vscodeApi';
 
 export interface Branch {
@@ -330,6 +330,20 @@ export function BranchPanel({ branches }: Props) {
         });
     }, []);
 
+    const ctxMenuRef = useRef<HTMLDivElement>(null);
+
+    useLayoutEffect(() => {
+        if (!ctxMenu || !ctxMenuRef.current) return;
+        const el = ctxMenuRef.current;
+        const rect = el.getBoundingClientRect();
+        if (rect.right > window.innerWidth) {
+            el.style.left = `${window.innerWidth - rect.width - 4}px`;
+        }
+        if (rect.bottom > window.innerHeight) {
+            el.style.top = `${window.innerHeight - rect.height - 4}px`;
+        }
+    }, [ctxMenu]);
+
     const localCollapsed = sectionsCollapsed.has('local');
     const remoteCollapsed = sectionsCollapsed.has('remote');
     const isEmpty = localBranches.length === 0 && remoteBranches.length === 0;
@@ -395,42 +409,46 @@ export function BranchPanel({ branches }: Props) {
             {isEmpty && <div className="empty">No branches match</div>}
 
             {ctxMenu && (
-                <div
-                    className="ctx-menu"
-                    style={{ left: ctxMenu.x, top: ctxMenu.y }}
-                    onClick={(e) => e.stopPropagation()}
-                >
-                    {!ctxMenu.branch.isRemote && (
-                        <>
-                            <div
-                                className="ctx-item"
-                                onClick={() => handleAction('checkoutBranch', ctxMenu.branch.fullName)}
-                            >
-                                Checkout
-                            </div>
-                            <div
-                                className="ctx-item"
-                                onClick={() => handleAction('deleteBranch', ctxMenu.branch.fullName)}
-                            >
-                                Delete
-                            </div>
-                            <div className="ctx-sep" />
-                            <div
-                                className="ctx-item"
-                                onClick={() => handleAction('createBranch', ctxMenu.branch.fullName)}
-                            >
-                                Create New Branch Here
-                            </div>
-                            <div className="ctx-sep" />
-                        </>
-                    )}
-                    <div className="ctx-item" onClick={() => handleAction('rebaseBranch', ctxMenu.branch.fullName)}>
-                        Rebase Current onto This
+                <>
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setCtxMenu(null)} />
+                    <div
+                        ref={ctxMenuRef}
+                        className="ctx-menu"
+                        style={{ left: ctxMenu.x, top: ctxMenu.y }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {!ctxMenu.branch.isRemote && (
+                            <>
+                                <div
+                                    className="ctx-item"
+                                    onClick={() => handleAction('checkoutBranch', ctxMenu.branch.fullName)}
+                                >
+                                    Checkout
+                                </div>
+                                <div
+                                    className="ctx-item"
+                                    onClick={() => handleAction('deleteBranch', ctxMenu.branch.fullName)}
+                                >
+                                    Delete
+                                </div>
+                                <div className="ctx-sep" />
+                                <div
+                                    className="ctx-item"
+                                    onClick={() => handleAction('createBranch', ctxMenu.branch.fullName)}
+                                >
+                                    Create New Branch Here
+                                </div>
+                                <div className="ctx-sep" />
+                            </>
+                        )}
+                        <div className="ctx-item" onClick={() => handleAction('rebaseBranch', ctxMenu.branch.fullName)}>
+                            Rebase Current onto This
+                        </div>
+                        <div className="ctx-item" onClick={() => handleAction('mergeBranch', ctxMenu.branch.fullName)}>
+                            Merge into Current
+                        </div>
                     </div>
-                    <div className="ctx-item" onClick={() => handleAction('mergeBranch', ctxMenu.branch.fullName)}>
-                        Merge into Current
-                    </div>
-                </div>
+                </>
             )}
         </div>
     );
