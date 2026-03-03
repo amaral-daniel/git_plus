@@ -29,15 +29,50 @@ interface RangeMenu {
 
 interface Props {
     commits: GitCommit[];
+    hasMore: boolean;
 }
 
-export function GraphView({ commits }: Props) {
+export function GraphView({ commits: initialCommits, hasMore: initialHasMore }: Props) {
+    const [commits, setCommits] = useState(initialCommits);
+    const [hasMore, setHasMore] = useState(initialHasMore);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedIndices, setSelectedIndices] = useState(new Set<number>());
     const [rangeStartIndex, setRangeStartIndex] = useState<number | null>(null);
     const [singleMenu, setSingleMenu] = useState<SingleMenu | null>(null);
     const [rangeMenu, setRangeMenu] = useState<RangeMenu | null>(null);
     const [editingHash, setEditingHash] = useState<string | null>(null);
+    const sentinelRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handler = (event: MessageEvent) => {
+            const msg = event.data;
+            if (msg.command === 'appendCommits') {
+                setCommits((prev) => [...prev, ...msg.commits]);
+                setHasMore(msg.hasMore);
+                setIsLoadingMore(false);
+            }
+        };
+        window.addEventListener('message', handler);
+        return () => window.removeEventListener('message', handler);
+    }, []);
+
+    useEffect(() => {
+        if (!hasMore || isLoadingMore) return;
+        const sentinel = sentinelRef.current;
+        if (!sentinel) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    setIsLoadingMore(true);
+                    vscode.postMessage({ command: 'loadMoreCommits' });
+                }
+            },
+            { threshold: 0.1 },
+        );
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [hasMore, isLoadingMore]);
 
     const filteredCommits = useMemo(() => {
         if (!searchQuery) {
@@ -209,6 +244,20 @@ export function GraphView({ commits }: Props) {
                             ))}
                         </tbody>
                     </table>
+                    {!searchQuery && (hasMore || isLoadingMore) && (
+                        <div
+                            ref={sentinelRef}
+                            style={{
+                                padding: '8px 10px',
+                                color: 'var(--vscode-descriptionForeground)',
+                                fontSize: '11px',
+                                opacity: 0.6,
+                                textAlign: 'center',
+                            }}
+                        >
+                            Loading more commits…
+                        </div>
+                    )}
                 </div>
             )}
 

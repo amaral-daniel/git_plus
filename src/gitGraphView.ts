@@ -3,6 +3,8 @@ import * as cp from 'child_process';
 import { GitOperations } from './gitOperations';
 import { getHtmlForWebview, getCommitDetailsHtml } from './webviewContent';
 
+const PAGE_SIZE = 200;
+
 interface WebviewMessage {
     command: string;
     commitHash?: string;
@@ -17,6 +19,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
     private _view?: vscode.WebviewView;
     private _watcher?: vscode.FileSystemWatcher;
     private _filterBranch: string | null = null;
+    private _loadedCount = 0;
     private readonly _gitOps: GitOperations;
 
     constructor(private readonly _extensionUri: vscode.Uri) {
@@ -56,9 +59,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             GitGraphViewProvider.currentPanel = undefined;
         });
 
-        panel.webview.onDidReceiveMessage((message) =>
-            provider.handleMessage(message, () => provider.updateWebview(panel.webview)),
-        );
+        panel.webview.onDidReceiveMessage((message) => provider.handleMessage(message, panel.webview));
     }
 
     public resolveWebviewView(
@@ -73,17 +74,18 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             localResourceRoots: [this._extensionUri],
         };
 
-        webviewView.webview.onDidReceiveMessage((message) =>
-            this.handleMessage(message, () => this.updateWebview(webviewView.webview)),
-        );
+        webviewView.webview.onDidReceiveMessage((message) => this.handleMessage(message, webviewView.webview));
 
         this.updateWebview(webviewView.webview);
     }
 
-    private handleMessage(message: WebviewMessage, refresh: () => void) {
+    private handleMessage(message: WebviewMessage, webview: vscode.Webview) {
         switch (message.command) {
             case 'refresh':
-                refresh();
+                this.updateWebview(webview);
+                break;
+            case 'loadMoreCommits':
+                this.loadMoreCommits(webview);
                 break;
             case 'editCommitMessage':
                 this._gitOps.editCommitMessage(message.commitHash!, message.newMessage!);
@@ -204,7 +206,17 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
     }
 
     private async updateWebview(webview: vscode.Webview) {
-        const commits = await this._gitOps.getGitLog(this._filterBranch);
-        webview.html = getHtmlForWebview(webview, commits, this._extensionUri);
+        this._loadedCount = 0;
+        const commits = await this._gitOps.getGitLog(this._filterBranch, 0, PAGE_SIZE);
+        this._loadedCount = commits.length;
+        const hasMore = commits.length === PAGE_SIZE;
+        webview.html = getHtmlForWebview(webview, commits, hasMore, this._extensionUri);
+    }
+
+    private async loadMoreCommits(webview: vscode.Webview) {
+        const commits = await this._gitOps.getGitLog(this._filterBranch, this._loadedCount, PAGE_SIZE);
+        this._loadedCount += commits.length;
+        const hasMore = commits.length === PAGE_SIZE;
+        webview.postMessage({ command: 'appendCommits', commits, hasMore });
     }
 }
