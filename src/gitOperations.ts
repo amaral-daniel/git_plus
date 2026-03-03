@@ -32,7 +32,7 @@ export class GitOperations {
             const branchArg = filterBranch ? ` ${filterBranch}` : '';
             const gitCommand = `git log${branchArg} --pretty=format:"%H|%h|%P|%an|%ai|%D|%s" --date-order`;
 
-            cp.exec(gitCommand, { cwd }, (error, stdout) => {
+            cp.exec(gitCommand, { cwd, maxBuffer: 100 * 1024 * 1024 }, (error, stdout) => {
                 if (error) {
                     vscode.window.showErrorMessage(`Git error: ${error.message}`);
                     resolve([]);
