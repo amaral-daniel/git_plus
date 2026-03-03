@@ -21,7 +21,7 @@ export class GitOperations {
         return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? null;
     }
 
-    async getGitLog(filterBranch: string | null): Promise<GitCommit[]> {
+    async getGitLog(filterBranch: string | null, skip = 0, limit = 200): Promise<GitCommit[]> {
         return new Promise((resolve) => {
             const cwd = this.getCwd();
             if (!cwd) {
@@ -30,7 +30,8 @@ export class GitOperations {
             }
 
             const branchArg = filterBranch ? ` ${filterBranch}` : '';
-            const gitCommand = `git log${branchArg} --pretty=format:"%H|%h|%P|%an|%ai|%D|%s" --date-order`;
+            const skipArg = skip > 0 ? ` --skip=${skip}` : '';
+            const gitCommand = `git log${branchArg}${skipArg} --max-count=${limit} --pretty=format:"%H|%h|%P|%an|%ai|%D|%s" --date-order`;
 
             cp.exec(gitCommand, { cwd, maxBuffer: 100 * 1024 * 1024 }, (error, stdout) => {
                 if (error) {

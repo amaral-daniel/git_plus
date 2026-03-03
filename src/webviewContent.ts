@@ -21,7 +21,12 @@ function getNonce(): string {
     return text;
 }
 
-export function getHtmlForWebview(webview: vscode.Webview, commits: GitCommit[], extensionUri: vscode.Uri): string {
+export function getHtmlForWebview(
+    webview: vscode.Webview,
+    commits: GitCommit[],
+    hasMore: boolean,
+    extensionUri: vscode.Uri,
+): string {
     const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'out', 'webview', 'graph', 'index.js'));
     const nonce = getNonce();
 
@@ -203,7 +208,7 @@ export function getHtmlForWebview(webview: vscode.Webview, commits: GitCommit[],
 </head>
 <body>
     <div id="root"></div>
-    <script nonce="${nonce}">window.__COMMITS__ = ${JSON.stringify(commits)};</script>
+    <script nonce="${nonce}">window.__COMMITS__ = ${JSON.stringify(commits)}; window.__HAS_MORE__ = ${hasMore};</script>
     <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;
