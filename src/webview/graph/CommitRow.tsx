@@ -6,6 +6,8 @@ interface Props {
     headCommitHash: string | undefined;
     isSelected: boolean;
     isEditing: boolean;
+    isFirst: boolean;
+    isLast: boolean;
     onClick: (shiftKey: boolean) => void;
     onContextMenu: (e: React.MouseEvent) => void;
     onEditConfirm: (newMessage: string) => void;
@@ -81,6 +83,8 @@ export const CommitRow = React.memo(function CommitRow({
     headCommitHash,
     isSelected,
     isEditing,
+    isFirst,
+    isLast,
     onClick,
     onContextMenu,
     onEditConfirm,
@@ -105,7 +109,14 @@ export const CommitRow = React.memo(function CommitRow({
         >
             <td className="graph-cell">
                 <svg width="20" height="28" style={{ display: 'block' }}>
-                    <line x1="10" y1="0" x2="10" y2="28" stroke="#3d9fd4" strokeWidth="2" />
+                    <line
+                        x1="10"
+                        y1={isFirst ? 14 : 0}
+                        x2="10"
+                        y2={isLast ? 14 : 28}
+                        stroke="#3d9fd4"
+                        strokeWidth="2"
+                    />
                     {isHead ? (
                         <>
                             <circle cx="10" cy="14" r="5" fill="none" stroke="#3d9fd4" strokeWidth="2" />

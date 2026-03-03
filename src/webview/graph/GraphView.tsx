@@ -236,6 +236,8 @@ export function GraphView({ commits: initialCommits, hasMore: initialHasMore }: 
                                     headCommitHash={headCommitHash}
                                     isSelected={selectedIndices.has(index)}
                                     isEditing={editingHash === commit.hash}
+                                    isFirst={index === 0}
+                                    isLast={index === filteredCommits.length - 1}
                                     onClick={(shiftKey) => handleRowClick(index, shiftKey)}
                                     onContextMenu={(e) => handleContextMenu(e, index)}
                                     onEditConfirm={(msg) => handleEditConfirm(commit.hash, msg)}
