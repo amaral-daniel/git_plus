@@ -8,11 +8,10 @@ export interface Branch {
     isHead: boolean;
 }
 
-interface ContextMenu {
-    x: number;
-    y: number;
-    branch: Branch;
-}
+type CtxMenu =
+    | { kind: 'branch'; x: number; y: number; branch: Branch }
+    | { kind: 'multi'; x: number; y: number; branches: Branch[] }
+    | { kind: 'folder'; x: number; y: number; branches: Branch[] };
 
 interface Props {
     branches: Branch[];
@@ -57,6 +56,28 @@ function buildRemoteTree(branches: Branch[]): TreeNode[] {
         name: remote,
         children: buildTree(children, `remote/${remote}`),
     }));
+}
+
+function collectBranches(nodes: TreeNode[]): Branch[] {
+    const result: Branch[] = [];
+    for (const node of nodes) {
+        if (node.type === 'branch') result.push(node.branch);
+        else result.push(...collectBranches(node.children));
+    }
+    return result;
+}
+
+// Returns branches in visual display order, respecting collapsed groups
+function flattenVisible(nodes: TreeNode[], collapsed: Set<string>): Branch[] {
+    const result: Branch[] = [];
+    for (const node of nodes) {
+        if (node.type === 'branch') {
+            result.push(node.branch);
+        } else if (!collapsed.has(node.key)) {
+            result.push(...flattenVisible(node.children, collapsed));
+        }
+    }
+    return result;
 }
 
 // ── Icons ────────────────────────────────────────────────────────────────────
@@ -171,18 +192,20 @@ function BranchRow({
     branch,
     depth,
     isSelected,
+    isMultiSelected,
     onClick,
     onContextMenu,
 }: {
     branch: Branch;
     depth: number;
     isSelected: boolean;
-    onClick: () => void;
+    isMultiSelected: boolean;
+    onClick: (e: React.MouseEvent) => void;
     onContextMenu: (e: React.MouseEvent) => void;
 }) {
     return (
         <div
-            className={`branch-row${isSelected ? ' selected' : ''}${branch.isHead ? ' is-head' : ''}`}
+            className={`branch-row${isSelected ? ' selected' : ''}${isMultiSelected ? ' multi-selected' : ''}${branch.isHead ? ' is-head' : ''}`}
             style={{ paddingLeft: 20 + depth * 16 }}
             onClick={onClick}
             onContextMenu={onContextMenu}
@@ -198,14 +221,21 @@ function GroupRow({
     depth,
     isCollapsed,
     onToggle,
+    onContextMenu,
 }: {
     name: string;
     depth: number;
     isCollapsed: boolean;
     onToggle: () => void;
+    onContextMenu?: (e: React.MouseEvent) => void;
 }) {
     return (
-        <div className="group-row" style={{ paddingLeft: 20 + depth * 16 }} onClick={onToggle}>
+        <div
+            className="group-row"
+            style={{ paddingLeft: 20 + depth * 16 }}
+            onClick={onToggle}
+            onContextMenu={onContextMenu}
+        >
             <span className="row-chevron">{isCollapsed ? <IconChevronRight /> : <IconChevronDown />}</span>
             <IconFolder />
             <span className="row-label">{name}</span>
@@ -217,17 +247,27 @@ function TreeNodes({
     nodes,
     depth,
     selected,
+    multiSelected,
     collapsed,
+    isLocal,
     onSelect,
+    onShiftClick,
+    onCtrlClick,
     onContextMenu,
+    onGroupContextMenu,
     onToggle,
 }: {
     nodes: TreeNode[];
     depth: number;
     selected: string | null;
+    multiSelected: Set<string>;
     collapsed: Set<string>;
+    isLocal: boolean;
     onSelect: (branch: Branch) => void;
+    onShiftClick: (branch: Branch) => void;
+    onCtrlClick: (branch: Branch) => void;
     onContextMenu: (e: React.MouseEvent, branch: Branch) => void;
+    onGroupContextMenu: (e: React.MouseEvent, branches: Branch[]) => void;
     onToggle: (key: string) => void;
 }) {
     return (
@@ -240,12 +280,24 @@ function TreeNodes({
                             branch={node.branch}
                             depth={depth}
                             isSelected={selected === node.branch.fullName}
-                            onClick={() => onSelect(node.branch)}
+                            isMultiSelected={multiSelected.has(node.branch.fullName)}
+                            onClick={(e) => {
+                                if (e.shiftKey) {
+                                    e.preventDefault();
+                                    onShiftClick(node.branch);
+                                } else if (e.metaKey || e.ctrlKey) {
+                                    e.stopPropagation();
+                                    onCtrlClick(node.branch);
+                                } else {
+                                    onSelect(node.branch);
+                                }
+                            }}
                             onContextMenu={(e) => onContextMenu(e, node.branch)}
                         />
                     );
                 }
                 const isCollapsed = collapsed.has(node.key);
+                const groupBranches = isLocal ? collectBranches(node.children) : [];
                 return (
                     <React.Fragment key={node.key}>
                         <GroupRow
@@ -253,15 +305,28 @@ function TreeNodes({
                             depth={depth}
                             isCollapsed={isCollapsed}
                             onToggle={() => onToggle(node.key)}
+                            onContextMenu={
+                                isLocal && groupBranches.length > 0
+                                    ? (e) => {
+                                          e.preventDefault();
+                                          onGroupContextMenu(e, groupBranches);
+                                      }
+                                    : undefined
+                            }
                         />
                         {!isCollapsed && (
                             <TreeNodes
                                 nodes={node.children}
                                 depth={depth + 1}
                                 selected={selected}
+                                multiSelected={multiSelected}
                                 collapsed={collapsed}
+                                isLocal={isLocal}
                                 onSelect={onSelect}
+                                onShiftClick={onShiftClick}
+                                onCtrlClick={onCtrlClick}
                                 onContextMenu={onContextMenu}
+                                onGroupContextMenu={onGroupContextMenu}
                                 onToggle={onToggle}
                             />
                         )}
@@ -277,7 +342,9 @@ function TreeNodes({
 export function BranchPanel({ branches }: Props) {
     const [query, setQuery] = useState('');
     const [selected, setSelected] = useState<string | null>(null);
-    const [ctxMenu, setCtxMenu] = useState<ContextMenu | null>(null);
+    const [multiSelected, setMultiSelected] = useState<Set<string>>(new Set());
+    const [rangeAnchor, setRangeAnchor] = useState<string | null>(null);
+    const [ctxMenu, setCtxMenu] = useState<CtxMenu | null>(null);
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
     const [sectionsCollapsed, setSectionsCollapsed] = useState<Set<string>>(new Set());
 
@@ -291,6 +358,8 @@ export function BranchPanel({ branches }: Props) {
     const handleSelect = useCallback(
         (branch: Branch) => {
             setCtxMenu(null);
+            setMultiSelected(new Set());
+            setRangeAnchor(branch.fullName);
             if (selected === branch.fullName) {
                 setSelected(null);
                 vscode.postMessage({ command: 'selectBranch', branchName: null });
@@ -302,14 +371,68 @@ export function BranchPanel({ branches }: Props) {
         [selected],
     );
 
-    const handleContextMenu = useCallback((e: React.MouseEvent, branch: Branch) => {
-        e.preventDefault();
-        setCtxMenu({ x: e.pageX, y: e.pageY, branch });
+    const handleCtrlClick = useCallback((branch: Branch) => {
+        if (branch.isRemote) return;
+        setCtxMenu(null);
+        setRangeAnchor(branch.fullName);
+        setMultiSelected((prev) => {
+            const next = new Set(prev);
+            if (next.has(branch.fullName)) next.delete(branch.fullName);
+            else next.add(branch.fullName);
+            return next;
+        });
+    }, []);
+
+    const handleShiftClick = useCallback(
+        (branch: Branch) => {
+            if (branch.isRemote) return;
+            setCtxMenu(null);
+            const flat = flattenVisible(localTree, collapsed);
+            const anchorIdx = flat.findIndex((b) => b.fullName === rangeAnchor);
+            const currentIdx = flat.findIndex((b) => b.fullName === branch.fullName);
+            if (anchorIdx === -1 || currentIdx === -1) {
+                handleCtrlClick(branch);
+                return;
+            }
+            const min = Math.min(anchorIdx, currentIdx);
+            const max = Math.max(anchorIdx, currentIdx);
+            const next = new Set<string>();
+            for (let i = min; i <= max; i++) {
+                if (!flat[i].isRemote) next.add(flat[i].fullName);
+            }
+            setMultiSelected(next);
+        },
+        [rangeAnchor, localTree, collapsed, handleCtrlClick],
+    );
+
+    const handleContextMenu = useCallback(
+        (e: React.MouseEvent, branch: Branch) => {
+            e.preventDefault();
+            if (!branch.isRemote && multiSelected.has(branch.fullName) && multiSelected.size > 1) {
+                const selectedBranches = branches.filter((b) => multiSelected.has(b.fullName));
+                setCtxMenu({ kind: 'multi', x: e.pageX, y: e.pageY, branches: selectedBranches });
+            } else {
+                setCtxMenu({ kind: 'branch', x: e.pageX, y: e.pageY, branch });
+            }
+        },
+        [multiSelected, branches],
+    );
+
+    const handleGroupContextMenu = useCallback((e: React.MouseEvent, groupBranches: Branch[]) => {
+        const deletable = groupBranches.filter((b) => !b.isRemote && !b.isHead);
+        if (deletable.length === 0) return;
+        setCtxMenu({ kind: 'folder', x: e.pageX, y: e.pageY, branches: deletable });
     }, []);
 
     const handleAction = useCallback((command: string, branchName: string) => {
         setCtxMenu(null);
         vscode.postMessage({ command, branchName });
+    }, []);
+
+    const handleDeleteMultiple = useCallback((branchNames: string[]) => {
+        setCtxMenu(null);
+        setMultiSelected(new Set());
+        vscode.postMessage({ command: 'deleteMultipleBranches', branchNames });
     }, []);
 
     const toggleGroup = useCallback((key: string) => {
@@ -349,7 +472,11 @@ export function BranchPanel({ branches }: Props) {
     const isEmpty = localBranches.length === 0 && remoteBranches.length === 0;
 
     return (
-        <div onClick={() => setCtxMenu(null)}>
+        <div
+            onClick={() => {
+                setCtxMenu(null);
+            }}
+        >
             <div className="search-wrap">
                 <input
                     className="search-input"
@@ -375,9 +502,14 @@ export function BranchPanel({ branches }: Props) {
                             nodes={localTree}
                             depth={0}
                             selected={selected}
+                            multiSelected={multiSelected}
                             collapsed={collapsed}
-                            onSelect={handleSelect}
+                            isLocal={true}
+                            onSelect={(branch) => handleSelect(branch)}
+                            onShiftClick={handleShiftClick}
+                            onCtrlClick={handleCtrlClick}
                             onContextMenu={handleContextMenu}
+                            onGroupContextMenu={handleGroupContextMenu}
                             onToggle={toggleGroup}
                         />
                     )}
@@ -397,9 +529,14 @@ export function BranchPanel({ branches }: Props) {
                             nodes={remoteTree}
                             depth={0}
                             selected={selected}
+                            multiSelected={multiSelected}
                             collapsed={collapsed}
-                            onSelect={handleSelect}
+                            isLocal={false}
+                            onSelect={(branch) => handleSelect(branch)}
+                            onShiftClick={handleShiftClick}
+                            onCtrlClick={handleCtrlClick}
                             onContextMenu={handleContextMenu}
+                            onGroupContextMenu={handleGroupContextMenu}
                             onToggle={toggleGroup}
                         />
                     )}
@@ -417,36 +554,64 @@ export function BranchPanel({ branches }: Props) {
                         style={{ left: ctxMenu.x, top: ctxMenu.y }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {!ctxMenu.branch.isRemote && (
+                        {ctxMenu.kind === 'branch' && (
                             <>
+                                {!ctxMenu.branch.isRemote && (
+                                    <>
+                                        <div
+                                            className="ctx-item"
+                                            onClick={() => handleAction('checkoutBranch', ctxMenu.branch.fullName)}
+                                        >
+                                            Checkout
+                                        </div>
+                                        <div
+                                            className="ctx-item"
+                                            onClick={() => handleAction('deleteBranch', ctxMenu.branch.fullName)}
+                                        >
+                                            Delete
+                                        </div>
+                                        <div className="ctx-sep" />
+                                        <div
+                                            className="ctx-item"
+                                            onClick={() => handleAction('createBranch', ctxMenu.branch.fullName)}
+                                        >
+                                            Create New Branch Here
+                                        </div>
+                                        <div className="ctx-sep" />
+                                    </>
+                                )}
                                 <div
                                     className="ctx-item"
-                                    onClick={() => handleAction('checkoutBranch', ctxMenu.branch.fullName)}
+                                    onClick={() => handleAction('rebaseBranch', ctxMenu.branch.fullName)}
                                 >
-                                    Checkout
+                                    Rebase Current onto This
                                 </div>
                                 <div
                                     className="ctx-item"
-                                    onClick={() => handleAction('deleteBranch', ctxMenu.branch.fullName)}
+                                    onClick={() => handleAction('mergeBranch', ctxMenu.branch.fullName)}
                                 >
-                                    Delete
+                                    Merge into Current
                                 </div>
-                                <div className="ctx-sep" />
-                                <div
-                                    className="ctx-item"
-                                    onClick={() => handleAction('createBranch', ctxMenu.branch.fullName)}
-                                >
-                                    Create New Branch Here
-                                </div>
-                                <div className="ctx-sep" />
                             </>
                         )}
-                        <div className="ctx-item" onClick={() => handleAction('rebaseBranch', ctxMenu.branch.fullName)}>
-                            Rebase Current onto This
-                        </div>
-                        <div className="ctx-item" onClick={() => handleAction('mergeBranch', ctxMenu.branch.fullName)}>
-                            Merge into Current
-                        </div>
+
+                        {ctxMenu.kind === 'multi' && (
+                            <div
+                                className="ctx-item ctx-item-danger"
+                                onClick={() => handleDeleteMultiple(ctxMenu.branches.map((b) => b.fullName))}
+                            >
+                                Delete Selected ({ctxMenu.branches.length})
+                            </div>
+                        )}
+
+                        {ctxMenu.kind === 'folder' && (
+                            <div
+                                className="ctx-item ctx-item-danger"
+                                onClick={() => handleDeleteMultiple(ctxMenu.branches.map((b) => b.fullName))}
+                            >
+                                Delete All in Folder ({ctxMenu.branches.length})
+                            </div>
+                        )}
                     </div>
                 </>
             )}

@@ -147,6 +147,10 @@
             {
                 "command": "git-lean.mergeBranch",
                 "title": "Merge Branch into Current"
+            },
+            {
+                "command": "git-lean.deleteMultipleBranches",
+                "title": "Delete Multiple Branches"
             }
         ]
     },
