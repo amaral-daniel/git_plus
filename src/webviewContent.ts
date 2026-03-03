@@ -12,6 +12,10 @@ export interface CommitDetailsData {
     patch: string;
 }
 
+function safeJson(value: unknown): string {
+    return JSON.stringify(value).replace(/<\//g, '<\\/');
+}
+
 function getNonce(): string {
     let text = '';
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -208,7 +212,7 @@ export function getHtmlForWebview(
 </head>
 <body>
     <div id="root"></div>
-    <script nonce="${nonce}">window.__COMMITS__ = ${JSON.stringify(commits)}; window.__HAS_MORE__ = ${hasMore};</script>
+    <script nonce="${nonce}">window.__COMMITS__ = ${safeJson(commits)}; window.__HAS_MORE__ = ${hasMore};</script>
     <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;
@@ -376,7 +380,7 @@ export function getCommitDetailsHtml(
 </head>
 <body>
     <div id="root"></div>
-    <script nonce="${nonce}">window.__COMMIT_DETAILS__ = ${JSON.stringify(data)};</script>
+    <script nonce="${nonce}">window.__COMMIT_DETAILS__ = ${safeJson(data)};</script>
     <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;
