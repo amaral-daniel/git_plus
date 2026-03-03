@@ -350,6 +350,63 @@ fs.writeFileSync(process.argv[2], ${JSON.stringify(newMessage + '\n')});
         }
     }
 
+    async revertCommits(hashes: string[]) {
+        const confirm = await vscode.window.showWarningMessage(
+            `Are you sure you want to revert ${hashes.length} commits? This will create ${hashes.length} new revert commits.`,
+            'Yes',
+            'No',
+        );
+        if (confirm !== 'Yes') {
+            return;
+        }
+
+        const cwd = this.getCwd();
+        if (!cwd) {
+            return;
+        }
+
+        // hashes are newest-first; revert in that order so each revert applies cleanly
+        cp.exec(`git revert ${hashes.join(' ')} --no-edit`, { cwd }, (error, _stdout, stderr) => {
+            if (error) {
+                vscode.window.showErrorMessage(`Failed to revert commits: ${error.message}\n${stderr}`);
+                return;
+            }
+            vscode.window.showInformationMessage(`Reverted ${hashes.length} commits successfully`);
+            this.onRefresh();
+        });
+    }
+
+    async dropCommits(hashes: string[], parentHash: string) {
+        if (!parentHash) {
+            vscode.window.showErrorMessage('Cannot drop: oldest selected commit has no parent.');
+            return;
+        }
+
+        const confirm = await vscode.window.showWarningMessage(
+            `Are you sure you want to permanently drop ${hashes.length} commits? This cannot be undone.`,
+            'Drop',
+            'Cancel',
+        );
+        if (confirm !== 'Drop') {
+            return;
+        }
+
+        const cwd = this.getCwd();
+        if (!cwd) {
+            return;
+        }
+
+        // hashes[0] is newest; rebase everything after it onto parentHash, dropping the whole range
+        cp.exec(`git rebase --onto ${parentHash} ${hashes[0]}`, { cwd }, (error, _stdout, stderr) => {
+            if (error) {
+                vscode.window.showErrorMessage(`Failed to drop commits: ${error.message}\n${stderr}`);
+                return;
+            }
+            vscode.window.showInformationMessage(`Dropped ${hashes.length} commits successfully`);
+            this.onRefresh();
+        });
+    }
+
     async cherryPickRange(hashes: string[]) {
         const cwd = this.getCwd();
         if (!cwd) {

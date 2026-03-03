@@ -96,6 +96,11 @@ export function GraphView({ commits: initialCommits, hasMore: initialHasMore }: 
         [commits],
     );
 
+    const isOnHeadBranch = useMemo(
+        () => commits.some((c) => c.refs.some((r) => r.startsWith('HEAD -> ') || r === 'HEAD')),
+        [commits],
+    );
+
     const closeMenus = useCallback(() => {
         setSingleMenu(null);
         setRangeMenu(null);
@@ -272,28 +277,36 @@ export function GraphView({ commits: initialCommits, hasMore: initialHasMore }: 
                         style={{ display: 'block', left: singleMenu.x, top: singleMenu.y }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="context-menu-item" onClick={() => handleSingleAction('editCommitMessage')}>
-                            Edit Commit Message
-                        </div>
-                        <div className="context-menu-item" onClick={() => handleSingleAction('cherryPick')}>
-                            Cherry Pick
-                        </div>
+                        {isOnHeadBranch && (
+                            <div className="context-menu-item" onClick={() => handleSingleAction('editCommitMessage')}>
+                                Edit Commit Message
+                            </div>
+                        )}
+                        {!isOnHeadBranch && (
+                            <div className="context-menu-item" onClick={() => handleSingleAction('cherryPick')}>
+                                Cherry Pick
+                            </div>
+                        )}
                         <div className="context-menu-separator" />
                         <div className="context-menu-item" onClick={() => handleSingleAction('copyHash')}>
                             Copy Hash
                         </div>
-                        <div className="context-menu-item" onClick={() => handleSingleAction('revertCommit')}>
-                            Revert Commit
-                        </div>
+                        {isOnHeadBranch && (
+                            <div className="context-menu-item" onClick={() => handleSingleAction('revertCommit')}>
+                                Revert Commit
+                            </div>
+                        )}
                         <div className="context-menu-item" onClick={() => handleSingleAction('resetToCommit')}>
                             Reset to Commit
                         </div>
-                        <div
-                            className="context-menu-item context-menu-item--danger"
-                            onClick={() => handleSingleAction('dropCommit')}
-                        >
-                            Drop Commit
-                        </div>
+                        {isOnHeadBranch && (
+                            <div
+                                className="context-menu-item context-menu-item--danger"
+                                onClick={() => handleSingleAction('dropCommit')}
+                            >
+                                Drop Commit
+                            </div>
+                        )}
                         <div className="context-menu-separator" />
                         <div className="context-menu-item" onClick={() => handleSingleAction('showCommitDetails')}>
                             Show more details
@@ -311,7 +324,7 @@ export function GraphView({ commits: initialCommits, hasMore: initialHasMore }: 
                         style={{ display: 'block', left: rangeMenu.x, top: rangeMenu.y }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {rangeMenu.consecutive && (
+                        {isOnHeadBranch && rangeMenu.consecutive && (
                             <>
                                 <div className="context-menu-item" onClick={() => handleRangeAction('squashCommits')}>
                                     Squash Commits
@@ -319,9 +332,27 @@ export function GraphView({ commits: initialCommits, hasMore: initialHasMore }: 
                                 <div className="context-menu-separator" />
                             </>
                         )}
-                        <div className="context-menu-item" onClick={() => handleRangeAction('cherryPickRange')}>
-                            Cherry-pick Commits
-                        </div>
+                        {!isOnHeadBranch && (
+                            <div className="context-menu-item" onClick={() => handleRangeAction('cherryPickRange')}>
+                                Cherry-pick Commits
+                            </div>
+                        )}
+                        {isOnHeadBranch && (
+                            <div className="context-menu-item" onClick={() => handleRangeAction('revertCommits')}>
+                                Revert Commits
+                            </div>
+                        )}
+                        {isOnHeadBranch && rangeMenu.consecutive && (
+                            <>
+                                <div className="context-menu-separator" />
+                                <div
+                                    className="context-menu-item context-menu-item--danger"
+                                    onClick={() => handleRangeAction('dropCommits')}
+                                >
+                                    Drop Commits
+                                </div>
+                            </>
+                        )}
                     </div>
                 </>
             )}

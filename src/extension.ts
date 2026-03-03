@@ -239,6 +239,90 @@ export function activate(context: vscode.ExtensionContext) {
     );
 
     context.subscriptions.push(
+        vscode.commands.registerCommand('git-lean.deleteMultipleBranches', async (branchNames: string[]) => {
+            if (!branchNames || branchNames.length === 0) {
+                return;
+            }
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (!workspaceFolders) {
+                return;
+            }
+            const cwd = workspaceFolders[0].uri.fsPath;
+
+            const label = branchNames.length === 1 ? `branch '${branchNames[0]}'` : `${branchNames.length} branches`;
+            const confirm = await vscode.window.showWarningMessage(
+                `Delete ${label}?`,
+                { detail: branchNames.join(', ') },
+                'Yes',
+                'No',
+            );
+            if (confirm !== 'Yes') {
+                return;
+            }
+
+            const tryDelete = (
+                name: string,
+                force: boolean,
+            ): Promise<{ name: string; notMerged: boolean; error?: string }> =>
+                new Promise((resolve) => {
+                    cp.execFile('git', ['branch', force ? '-D' : '-d', name], { cwd }, (err, _stdout, stderr) => {
+                        if (err) {
+                            if (!force && stderr.includes('not fully merged')) {
+                                resolve({ name, notMerged: true });
+                            } else {
+                                resolve({ name, notMerged: false, error: stderr || err.message });
+                            }
+                        } else {
+                            resolve({ name, notMerged: false });
+                        }
+                    });
+                });
+
+            const results = await Promise.all(branchNames.map((name) => tryDelete(name, false)));
+            const notMerged = results.filter((r) => r.notMerged).map((r) => r.name);
+            const failed = results.filter((r) => !r.notMerged && r.error);
+            const deletedCount = results.filter((r) => !r.notMerged && !r.error).length;
+
+            if (failed.length > 0) {
+                vscode.window.showErrorMessage(`Failed to delete: ${failed.map((r) => r.name).join(', ')}`);
+            }
+
+            if (notMerged.length > 0) {
+                const notMergedLabel =
+                    notMerged.length === 1 ? `Branch '${notMerged[0]}' is` : `${notMerged.length} branches are`;
+                const forceConfirm = await vscode.window.showWarningMessage(
+                    `${notMergedLabel} not fully merged. Force delete?`,
+                    { detail: notMerged.join(', ') },
+                    'Force Delete',
+                    'Cancel',
+                );
+                if (forceConfirm === 'Force Delete') {
+                    const forceResults = await Promise.all(notMerged.map((name) => tryDelete(name, true)));
+                    const forceDeleted = forceResults.filter((r) => !r.error).length;
+                    const forceFailed = forceResults.filter((r) => r.error);
+                    if (forceFailed.length > 0) {
+                        vscode.window.showErrorMessage(
+                            `Failed to force delete: ${forceFailed.map((r) => r.name).join(', ')}`,
+                        );
+                    }
+                    const total = deletedCount + forceDeleted;
+                    if (total > 0) {
+                        vscode.window.showInformationMessage(`Deleted ${total} branch${total > 1 ? 'es' : ''}`);
+                    }
+                } else if (deletedCount > 0) {
+                    vscode.window.showInformationMessage(
+                        `Deleted ${deletedCount} branch${deletedCount > 1 ? 'es' : ''}`,
+                    );
+                }
+            } else if (deletedCount > 0) {
+                vscode.window.showInformationMessage(`Deleted ${deletedCount} branch${deletedCount > 1 ? 'es' : ''}`);
+            }
+
+            branchProvider.refresh();
+        }),
+    );
+
+    context.subscriptions.push(
         vscode.commands.registerCommand('git-lean.createBranch', async (branchTreeItem: BranchTreeItem) => {
             const sourceBranch = branchTreeItem.branchName;
             if (!sourceBranch) {

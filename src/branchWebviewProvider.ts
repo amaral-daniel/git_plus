@@ -4,6 +4,7 @@ import * as cp from 'child_process';
 interface WebviewMessage {
     command: string;
     branchName: string;
+    branchNames?: string[];
 }
 
 interface Branch {
@@ -74,6 +75,10 @@ export class BranchWebviewProvider implements vscode.WebviewViewProvider {
     private handleMessage(message: WebviewMessage) {
         if (message.command === 'selectBranch') {
             this._onBranchSelected?.(message.branchName);
+            return;
+        }
+        if (message.command === 'deleteMultipleBranches') {
+            vscode.commands.executeCommand('git-lean.deleteMultipleBranches', message.branchNames);
             return;
         }
         vscode.commands.executeCommand(`git-lean.${message.command}`, { branchName: message.branchName });
@@ -224,6 +229,13 @@ body {
     color: var(--vscode-list-hoverForeground);
 }
 .ctx-sep { height: 1px; background: var(--vscode-panel-border); margin: 3px 6px; }
+.ctx-item-danger { color: var(--vscode-errorForeground, #f14c4c); }
+.ctx-item-danger:hover { color: var(--vscode-errorForeground, #f14c4c); }
+.branch-row.multi-selected {
+    background: var(--vscode-list-inactiveSelectionBackground);
+    outline: 1px solid var(--vscode-focusBorder);
+    outline-offset: -1px;
+}
 </style>
 </head>
 <body>
