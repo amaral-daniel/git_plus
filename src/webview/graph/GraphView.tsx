@@ -277,12 +277,16 @@ export function GraphView({ commits: initialCommits, hasMore: initialHasMore }: 
                         style={{ display: 'block', left: singleMenu.x, top: singleMenu.y }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="context-menu-item" onClick={() => handleSingleAction('editCommitMessage')}>
-                            Edit Commit Message
-                        </div>
-                        <div className="context-menu-item" onClick={() => handleSingleAction('cherryPick')}>
-                            Cherry Pick
-                        </div>
+                        {isOnHeadBranch && (
+                            <div className="context-menu-item" onClick={() => handleSingleAction('editCommitMessage')}>
+                                Edit Commit Message
+                            </div>
+                        )}
+                        {!isOnHeadBranch && (
+                            <div className="context-menu-item" onClick={() => handleSingleAction('cherryPick')}>
+                                Cherry Pick
+                            </div>
+                        )}
                         <div className="context-menu-separator" />
                         <div className="context-menu-item" onClick={() => handleSingleAction('copyHash')}>
                             Copy Hash
@@ -328,9 +332,11 @@ export function GraphView({ commits: initialCommits, hasMore: initialHasMore }: 
                                 <div className="context-menu-separator" />
                             </>
                         )}
-                        <div className="context-menu-item" onClick={() => handleRangeAction('cherryPickRange')}>
-                            Cherry-pick Commits
-                        </div>
+                        {!isOnHeadBranch && (
+                            <div className="context-menu-item" onClick={() => handleRangeAction('cherryPickRange')}>
+                                Cherry-pick Commits
+                            </div>
+                        )}
                         {isOnHeadBranch && (
                             <div className="context-menu-item" onClick={() => handleRangeAction('revertCommits')}>
                                 Revert Commits
