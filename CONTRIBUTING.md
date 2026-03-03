@@ -17,18 +17,22 @@ Thanks for your interest in contributing. This document covers how to set up a l
 
 1. **Fork and clone** the repository
 2. **Install dependencies:**
-   ```bash
-   pnpm install
-   ```
+
+    ```bash
+    pnpm install
+    ```
+
 3. **Compile the extension:**
-   ```bash
-   pnpm run compile
-   ```
+
+    ```bash
+    pnpm run compile
+    ```
+
 4. **Launch the Extension Development Host:**
-   - Open the project in VS Code
-   - Press `F5` (or run **Debug: Start Debugging**)
-   - A second VS Code window opens with Git Lean loaded
-   - Open any Git repository in that window to use the extension
+    - Open the project in VS Code
+    - Press `F5` (or run **Debug: Start Debugging**)
+    - A second VS Code window opens with Git Lean loaded
+    - Open any Git repository in that window to use the extension
 
 ### Watch Mode
 
@@ -68,6 +72,7 @@ src/
 ```
 
 **Two build targets:**
+
 - **Extension host** — compiled by `tsc` to `out/` (CommonJS, runs in Node.js)
 - **Webviews** — bundled by `esbuild` to `out/webview/` (IIFE, runs in the browser sandbox)
 
@@ -90,6 +95,7 @@ pnpm run format
 ```
 
 Key style rules (from `.prettierrc`):
+
 - Single quotes
 - 4-space indentation
 - Trailing commas
@@ -104,7 +110,10 @@ Before opening an issue:
 - Check that you are on the latest version
 - Search existing issues to avoid duplicates
 
+Please note that feature requests are unlikely to be accepted. This extension exists to stay as lean as possible.
+
 When reporting a bug, include:
+
 - VS Code version
 - Git Lean version
 - Operating system
@@ -116,9 +125,11 @@ When reporting a bug, include:
 ## Submitting Pull Requests
 
 1. Create a feature branch from `main`:
-   ```bash
-   git checkout -b feat/your-feature-name
-   ```
+
+    ```bash
+    git checkout -b feat/your-feature-name
+    ```
+
 2. Make your changes and commit with a clear message
 3. Run lint and format checks before pushing
 4. Open a pull request against `main` with a description of what changed and why
