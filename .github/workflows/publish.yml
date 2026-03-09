@@ -71,8 +71,22 @@ jobs:
               env:
                   OVSX_PAT: ${{ secrets.OVSX_PAT }}
 
+            - name: Package extension
+              if: steps.version.outputs.tagged == 'false'
+              run: pnpm dlx @vscode/vsce package --no-dependencies
+
             - name: Tag release
               if: steps.version.outputs.tagged == 'false'
               run: |
                   git tag "v${{ steps.version.outputs.value }}"
                   git push origin "v${{ steps.version.outputs.value }}"
+
+            - name: Create GitHub release
+              if: steps.version.outputs.tagged == 'false'
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  gh release create "v${{ steps.version.outputs.value }}" \
+                    *.vsix \
+                    --title "v${{ steps.version.outputs.value }}" \
+                    --generate-notes
