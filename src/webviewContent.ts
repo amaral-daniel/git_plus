@@ -31,7 +31,7 @@ export function getHtmlForWebview(
     hasMore: boolean,
     extensionUri: vscode.Uri,
 ): string {
-    const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'out', 'webview', 'graph', 'index.js'));
+    const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'out', 'webview', 'index.js'));
     const nonce = getNonce();
 
     return `<!DOCTYPE html>
@@ -212,7 +212,7 @@ export function getHtmlForWebview(
 </head>
 <body>
     <div id="root"></div>
-    <script nonce="${nonce}">window.__COMMITS__ = ${safeJson(commits)}; window.__HAS_MORE__ = ${hasMore};</script>
+    <script nonce="${nonce}">window.__VIEW__ = 'graph'; window.__COMMITS__ = ${safeJson(commits)}; window.__HAS_MORE__ = ${hasMore};</script>
     <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;
@@ -223,9 +223,7 @@ export function getCommitDetailsHtml(
     data: CommitDetailsData,
     extensionUri: vscode.Uri,
 ): string {
-    const scriptUri = webview.asWebviewUri(
-        vscode.Uri.joinPath(extensionUri, 'out', 'webview', 'commitDetails', 'index.js'),
-    );
+    const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'out', 'webview', 'index.js'));
     const nonce = getNonce();
 
     return `<!DOCTYPE html>
@@ -380,7 +378,7 @@ export function getCommitDetailsHtml(
 </head>
 <body>
     <div id="root"></div>
-    <script nonce="${nonce}">window.__COMMIT_DETAILS__ = ${safeJson(data)};</script>
+    <script nonce="${nonce}">window.__VIEW__ = 'commitDetails'; window.__COMMIT_DETAILS__ = ${safeJson(data)};</script>
     <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;

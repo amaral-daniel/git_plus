@@ -3,7 +3,7 @@
     "publisher": "danieldev",
     "displayName": "Git Lean",
     "description": "A minimalist Git extension with a canvas-rendered commit graph and branch management — no bloat, no distractions.",
-    "version": "0.0.10",
+    "version": "0.0.11",
     "engines": {
         "vscode": "^1.75.0",
         "node": ">=24"
@@ -158,9 +158,9 @@
     "scripts": {
         "vscode:prepublish": "pnpm run compile",
         "compile": "tsc -p ./ && pnpm run bundle-webview",
-        "bundle-webview": "esbuild src/webview/graph/index.tsx src/webview/commitDetails/index.tsx src/webview/branches/index.tsx --bundle --outdir=out/webview --format=iife --target=es2020 --jsx=automatic",
+        "bundle-webview": "esbuild src/webview/index.tsx --bundle --outfile=out/webview/index.js --format=iife --target=es2020 --jsx=automatic --minify",
         "watch": "tsc -watch -p ./",
-        "watch:webview": "esbuild src/webview/graph/index.tsx src/webview/commitDetails/index.tsx src/webview/branches/index.tsx --bundle --outdir=out/webview --format=iife --target=es2020 --jsx=automatic --watch",
+        "watch:webview": "esbuild src/webview/index.tsx --bundle --outfile=out/webview/index.js --format=iife --target=es2020 --jsx=automatic --watch",
         "pretest": "pnpm run compile",
         "lint": "eslint src",
         "lint:fix": "eslint src --fix",
