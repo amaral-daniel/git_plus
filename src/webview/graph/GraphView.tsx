@@ -51,6 +51,13 @@ export function GraphView({ commits: initialCommits, hasMore: initialHasMore }: 
                 setCommits((prev) => [...prev, ...msg.commits]);
                 setHasMore(msg.hasMore);
                 setIsLoadingMore(false);
+            } else if (msg.command === 'replaceCommits') {
+                setCommits(msg.commits);
+                setHasMore(msg.hasMore);
+                setSelectedIndices(new Set());
+                setRangeStartIndex(null);
+                setSingleMenu(null);
+                setRangeMenu(null);
             }
         };
         window.addEventListener('message', handler);

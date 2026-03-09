@@ -21,6 +21,8 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
     private _filterBranch: string | null = null;
     private _loadedCount = 0;
     private readonly _gitOps: GitOperations;
+    private _refreshTimer?: ReturnType<typeof setTimeout>;
+    private _initialized = false;
 
     constructor(private readonly _extensionUri: vscode.Uri) {
         this._gitOps = new GitOperations(() => this.refresh());
@@ -136,18 +138,28 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             new vscode.RelativePattern(workspaceFolders[0], '.git/**'),
         );
 
-        this._watcher.onDidChange(() => this.refresh());
-        this._watcher.onDidCreate(() => this.refresh());
-        this._watcher.onDidDelete(() => this.refresh());
+        this._watcher.onDidChange(() => this.debouncedRefresh());
+        this._watcher.onDidCreate(() => this.debouncedRefresh());
+        this._watcher.onDidDelete(() => this.debouncedRefresh());
     }
 
-    private refresh() {
-        if (this._view) {
-            this.updateWebview(this._view.webview);
+    private debouncedRefresh() {
+        if (this._refreshTimer) {
+            clearTimeout(this._refreshTimer);
         }
-        if (GitGraphViewProvider.currentPanel) {
-            this.updateWebview(GitGraphViewProvider.currentPanel.webview);
+        this._refreshTimer = setTimeout(() => this.refresh(), 500);
+    }
+
+    private async refresh() {
+        if (!this._initialized) {
+            return;
         }
+        const commits = await this._gitOps.getGitLog(this._filterBranch, 0, PAGE_SIZE);
+        this._loadedCount = commits.length;
+        const hasMore = commits.length === PAGE_SIZE;
+        const msg = { command: 'replaceCommits', commits, hasMore };
+        this._view?.webview.postMessage(msg);
+        GitGraphViewProvider.currentPanel?.webview.postMessage(msg);
     }
 
     public dispose() {
@@ -215,11 +227,13 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
     }
 
     private async updateWebview(webview: vscode.Webview) {
+        this._initialized = false;
         this._loadedCount = 0;
         const commits = await this._gitOps.getGitLog(this._filterBranch, 0, PAGE_SIZE);
         this._loadedCount = commits.length;
         const hasMore = commits.length === PAGE_SIZE;
         webview.html = getHtmlForWebview(webview, commits, hasMore, this._extensionUri);
+        this._initialized = true;
     }
 
     private async loadMoreCommits(webview: vscode.Webview) {
