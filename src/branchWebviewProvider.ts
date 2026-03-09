@@ -85,9 +85,7 @@ export class BranchWebviewProvider implements vscode.WebviewViewProvider {
     }
 
     private getHtml(webview: vscode.Webview, branches: Branch[]): string {
-        const scriptUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'index.js'),
-        );
+        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'index.js'));
         const nonce = getNonce();
 
         return `<!DOCTYPE html>

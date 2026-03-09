@@ -223,9 +223,7 @@ export function getCommitDetailsHtml(
     data: CommitDetailsData,
     extensionUri: vscode.Uri,
 ): string {
-    const scriptUri = webview.asWebviewUri(
-        vscode.Uri.joinPath(extensionUri, 'out', 'webview', 'index.js'),
-    );
+    const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, 'out', 'webview', 'index.js'));
     const nonce = getNonce();
 
     return `<!DOCTYPE html>
