@@ -277,6 +277,11 @@ export function GraphView({ commits: initialCommits, hasMore: initialHasMore }: 
                         style={{ display: 'block', left: singleMenu.x, top: singleMenu.y }}
                         onClick={(e) => e.stopPropagation()}
                     >
+                        {isOnHeadBranch && singleMenu.hash === headCommitHash && (
+                            <div className="context-menu-item" onClick={() => handleSingleAction('amendCommit')}>
+                                Amend Commit
+                            </div>
+                        )}
                         {isOnHeadBranch && (
                             <div className="context-menu-item" onClick={() => handleSingleAction('editCommitMessage')}>
                                 Edit Commit Message

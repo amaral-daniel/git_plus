@@ -144,6 +144,31 @@ fs.writeFileSync(process.argv[2], ${JSON.stringify(newMessage + '\n')});
         }
     }
 
+    async amendCommit() {
+        const cwd = this.getCwd();
+        if (!cwd) {
+            return;
+        }
+
+        const confirm = await vscode.window.showWarningMessage(
+            'Amend HEAD commit with staged changes?',
+            'Amend',
+            'Cancel',
+        );
+        if (confirm !== 'Amend') {
+            return;
+        }
+
+        cp.execFile('git', ['commit', '--amend', '--no-edit'], { cwd }, (error, _stdout, stderr) => {
+            if (error) {
+                vscode.window.showErrorMessage(`Failed to amend commit: ${stderr || error.message}`);
+                return;
+            }
+            vscode.window.showInformationMessage('Commit amended successfully');
+            this.onRefresh();
+        });
+    }
+
     async cherryPickCommit(commitHash: string) {
         const cwd = this.getCwd();
         if (!cwd) {

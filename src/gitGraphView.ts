@@ -90,6 +90,9 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
             case 'editCommitMessage':
                 this._gitOps.editCommitMessage(message.commitHash!, message.newMessage!);
                 break;
+            case 'amendCommit':
+                this._gitOps.amendCommit();
+                break;
             case 'cherryPick':
                 this._gitOps.cherryPickCommit(message.commitHash!);
                 break;
