@@ -86,7 +86,7 @@ export class BranchWebviewProvider implements vscode.WebviewViewProvider {
 
     private getHtml(webview: vscode.Webview, branches: Branch[]): string {
         const scriptUri = webview.asWebviewUri(
-            vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'branches', 'index.js'),
+            vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'index.js'),
         );
         const nonce = getNonce();
 
@@ -240,7 +240,7 @@ body {
 </head>
 <body>
 <div id="root"></div>
-<script nonce="${nonce}">window.__BRANCHES__ = ${JSON.stringify(branches)};</script>
+<script nonce="${nonce}">window.__VIEW__ = 'branches'; window.__BRANCHES__ = ${JSON.stringify(branches)};</script>
 <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
 </html>`;
