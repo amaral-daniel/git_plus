@@ -91,12 +91,14 @@ export function GraphView({ commits: initialCommits, hasMore: initialHasMore }: 
         );
     }, [commits, searchQuery]);
 
-    useEffect(() => {
+    const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery);
+    if (prevSearchQuery !== searchQuery) {
+        setPrevSearchQuery(searchQuery);
         setSelectedIndices(new Set());
         setRangeStartIndex(null);
         setSingleMenu(null);
         setRangeMenu(null);
-    }, [searchQuery]);
+    }
 
     const headCommitHash = useMemo(
         () => (commits.find((c) => c.refs.some((r) => r.startsWith('HEAD -> ') || r === 'HEAD')) ?? commits[0])?.hash,
