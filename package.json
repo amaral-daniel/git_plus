@@ -170,17 +170,17 @@
         "format:check": "prettier --check src"
     },
     "devDependencies": {
-        "@types/node": "^24.0.0",
+        "@types/node": "^25.4.0",
         "@types/react": "^19.2.14",
         "@types/react-dom": "^19.2.3",
-        "@types/vscode": "^1.75.0",
+        "@types/vscode": "^1.110.0",
         "esbuild": "^0.27.3",
-        "eslint": "^9.0.0",
+        "eslint": "^10.0.3",
         "eslint-config-prettier": "^10.1.8",
-        "eslint-plugin-react-hooks": "^5.0.0",
+        "eslint-plugin-react-hooks": "^7.0.1",
         "prettier": "^3.8.1",
         "typescript": "^5.0.0",
-        "typescript-eslint": "^8.0.0",
+        "typescript-eslint": "^8.57.0",
         "vitest": "^4.0.18"
     },
     "dependencies": {
