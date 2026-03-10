@@ -6,7 +6,8 @@
     "version": "0.0.13",
     "engines": {
         "vscode": "^1.75.0",
-        "node": ">=24"
+        "node": ">=24",
+        "pnpm": ">=10"
     },
     "categories": [
         "SCM Providers"
