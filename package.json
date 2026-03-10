@@ -161,6 +161,7 @@
         "bundle-webview": "esbuild src/webview/index.tsx --bundle --outfile=out/webview/index.js --format=iife --target=es2020 --jsx=automatic --minify",
         "watch": "tsc -watch -p ./",
         "watch:webview": "esbuild src/webview/index.tsx --bundle --outfile=out/webview/index.js --format=iife --target=es2020 --jsx=automatic --watch",
+        "test": "vitest run",
         "pretest": "pnpm run compile",
         "lint": "eslint src",
         "lint:fix": "eslint src --fix",
@@ -178,7 +179,8 @@
         "eslint-plugin-react-hooks": "^5.0.0",
         "prettier": "^3.8.1",
         "typescript": "^5.0.0",
-        "typescript-eslint": "^8.0.0"
+        "typescript-eslint": "^8.0.0",
+        "vitest": "^4.0.18"
     },
     "dependencies": {
         "react": "^19.2.4",

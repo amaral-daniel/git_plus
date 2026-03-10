@@ -3,16 +3,9 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
+import { parseGitLogOutput, type GitCommit } from './gitParser';
 
-export interface GitCommit {
-    hash: string;
-    shortHash: string;
-    message: string;
-    date: string;
-    author: string;
-    parents: string[];
-    refs: string[];
-}
+export type { GitCommit } from './gitParser';
 
 export class GitOperations {
     constructor(private readonly onRefresh: () => void) {}
@@ -40,30 +33,7 @@ export class GitOperations {
                     return;
                 }
 
-                const commits: GitCommit[] = stdout
-                    .split('\n')
-                    .filter((line) => line.trim())
-                    .map((line) => {
-                        const [fullHash, shortHash, parents, author, date, refs, ...messageParts] = line.split('|');
-                        const refList = refs
-                            .trim()
-                            .split(',')
-                            .map((r) => r.trim())
-                            .filter((r) => r);
-                        return {
-                            hash: fullHash.trim(),
-                            shortHash: shortHash.trim(),
-                            message: messageParts.join('|').trim(),
-                            date: new Date(date).toLocaleString(),
-                            author: author.trim(),
-                            parents: parents
-                                .trim()
-                                .split(' ')
-                                .map((p) => p.trim())
-                                .filter((p) => p),
-                            refs: refList,
-                        };
-                    });
+                const commits = parseGitLogOutput(stdout);
 
                 resolve(commits);
             });
