@@ -27,6 +27,8 @@ export class BranchWebviewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'gitLeanBranchView';
     private _view?: vscode.WebviewView;
     private _onBranchSelected: ((branch: string | null) => void) | null = null;
+    private _refreshTimer?: ReturnType<typeof setTimeout>;
+    private _initialized = false;
 
     constructor(private readonly _extensionUri: vscode.Uri) {
         const workspaceFolders = vscode.workspace.workspaceFolders;
@@ -34,9 +36,9 @@ export class BranchWebviewProvider implements vscode.WebviewViewProvider {
             const watcher = vscode.workspace.createFileSystemWatcher(
                 new vscode.RelativePattern(workspaceFolders[0], '.git/**'),
             );
-            watcher.onDidChange(() => this.refresh());
-            watcher.onDidCreate(() => this.refresh());
-            watcher.onDidDelete(() => this.refresh());
+            watcher.onDidChange(() => this.debouncedRefresh());
+            watcher.onDidCreate(() => this.debouncedRefresh());
+            watcher.onDidDelete(() => this.debouncedRefresh());
         }
     }
 
@@ -64,12 +66,29 @@ export class BranchWebviewProvider implements vscode.WebviewViewProvider {
         }
     }
 
+    private debouncedRefresh(): void {
+        if (this._refreshTimer) {
+            clearTimeout(this._refreshTimer);
+        }
+        this._refreshTimer = setTimeout(() => this.sendBranchUpdate(), 500);
+    }
+
+    private async sendBranchUpdate(): Promise<void> {
+        if (!this._initialized || !this._view) {
+            return;
+        }
+        const branches = await this.getBranches();
+        this._view.webview.postMessage({ command: 'replaceBranches', branches });
+    }
+
     private async updateWebview(): Promise<void> {
         if (!this._view) {
             return;
         }
+        this._initialized = false;
         const branches = await this.getBranches();
         this._view.webview.html = this.getHtml(this._view.webview, branches);
+        this._initialized = true;
     }
 
     private handleMessage(message: WebviewMessage) {

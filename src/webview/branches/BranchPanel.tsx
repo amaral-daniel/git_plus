@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { vscode } from '../vscodeApi';
 
 export interface Branch {
@@ -339,7 +339,8 @@ function TreeNodes({
 
 // ── Main panel ───────────────────────────────────────────────────────────────
 
-export function BranchPanel({ branches }: Props) {
+export function BranchPanel({ branches: initialBranches }: Props) {
+    const [branches, setBranches] = useState(initialBranches);
     const [query, setQuery] = useState('');
     const [selected, setSelected] = useState<string | null>(null);
     const [multiSelected, setMultiSelected] = useState<Set<string>>(new Set());
@@ -347,6 +348,17 @@ export function BranchPanel({ branches }: Props) {
     const [ctxMenu, setCtxMenu] = useState<CtxMenu | null>(null);
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
     const [sectionsCollapsed, setSectionsCollapsed] = useState<Set<string>>(new Set());
+
+    useEffect(() => {
+        const handler = (event: MessageEvent) => {
+            const msg = event.data;
+            if (msg.command === 'replaceBranches') {
+                setBranches(msg.branches);
+            }
+        };
+        window.addEventListener('message', handler);
+        return () => window.removeEventListener('message', handler);
+    }, []);
 
     const q = query.toLowerCase();
     const localBranches = branches.filter((b) => !b.isRemote && (!q || b.name.toLowerCase().includes(q)));
