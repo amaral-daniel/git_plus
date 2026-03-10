@@ -1,7 +1,9 @@
 name: Publish
 
 on:
-    push:
+    workflow_run:
+        workflows: [CI]
+        types: [completed]
         branches: [main]
     workflow_dispatch:
 
@@ -13,6 +15,7 @@ jobs:
         name: Publish to VS Code Marketplace
         runs-on: ubuntu-latest
         environment: prod
+        if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
         steps:
             - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
               with:
