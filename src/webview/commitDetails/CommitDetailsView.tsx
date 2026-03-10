@@ -49,13 +49,8 @@ function DiffLine({ line }: { line: string }) {
 }
 
 function FileDiffBlock({ diff }: { diff: FileDiff }) {
-    let inHunk = false;
-    const hunkLines = diff.lines.filter((line) => {
-        if (line.startsWith('@@')) {
-            inHunk = true;
-        }
-        return inHunk;
-    });
+    const hunkStart = diff.lines.findIndex((line) => line.startsWith('@@'));
+    const hunkLines = hunkStart === -1 ? [] : diff.lines.slice(hunkStart);
 
     return (
         <details open>
