@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as cp from 'child_process';
 import { GitOperations } from './gitOperations';
 import { getHtmlForWebview, getCommitDetailsHtml } from './webviewContent';
+import { RepositoryManager } from './repositoryManager';
 
 const PAGE_SIZE = 200;
 
@@ -17,16 +18,29 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'gitLeanGraphView';
     private static currentPanel: vscode.WebviewPanel | undefined;
     private _view?: vscode.WebviewView;
-    private _watcher?: vscode.FileSystemWatcher;
+    private _watchers: vscode.FileSystemWatcher[] = [];
     private _filterBranch: string | null = null;
     private _loadedCount = 0;
     private readonly _gitOps: GitOperations;
     private _refreshTimer?: ReturnType<typeof setTimeout>;
     private _initialized = false;
 
-    constructor(private readonly _extensionUri: vscode.Uri) {
-        this._gitOps = new GitOperations(() => this.refresh());
-        this.setupGitWatcher();
+    constructor(
+        private readonly _extensionUri: vscode.Uri,
+        private readonly _repoManager: RepositoryManager,
+    ) {
+        this._gitOps = new GitOperations(() => this.refresh(), _repoManager);
+        this.setupGitWatchers();
+
+        // Refresh when active repository changes
+        _repoManager.onDidChangeRepository(() => {
+            this.refresh();
+        });
+        
+        // Refresh watchers when repositories are discovered/changed
+        _repoManager.onDidChangeRepositories(() => {
+            this.setupGitWatchers();
+        });
     }
 
     public filterByBranch(branch: string | null) {
@@ -34,7 +48,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
         this.refresh();
     }
 
-    public static createOrShow(extensionUri: vscode.Uri) {
+    public static createOrShow(extensionUri: vscode.Uri, repoManager: RepositoryManager) {
         const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
         if (GitGraphViewProvider.currentPanel) {
@@ -54,7 +68,7 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
 
         GitGraphViewProvider.currentPanel = panel;
 
-        const provider = new GitGraphViewProvider(extensionUri);
+        const provider = new GitGraphViewProvider(extensionUri, repoManager);
         provider.updateWebview(panel.webview);
 
         panel.onDidDispose(() => {
@@ -128,19 +142,18 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
         }
     }
 
-    private setupGitWatcher() {
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (!workspaceFolders) {
-            return;
+    private setupGitWatchers() {
+        this._watchers.forEach((w) => w.dispose());
+        this._watchers = [];
+
+        const repos = this._repoManager.getRepositories();
+        for (const repo of repos) {
+            const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(repo.path, '.git/**'));
+            watcher.onDidChange(() => this.debouncedRefresh());
+            watcher.onDidCreate(() => this.debouncedRefresh());
+            watcher.onDidDelete(() => this.debouncedRefresh());
+            this._watchers.push(watcher);
         }
-
-        this._watcher = vscode.workspace.createFileSystemWatcher(
-            new vscode.RelativePattern(workspaceFolders[0], '.git/**'),
-        );
-
-        this._watcher.onDidChange(() => this.debouncedRefresh());
-        this._watcher.onDidCreate(() => this.debouncedRefresh());
-        this._watcher.onDidDelete(() => this.debouncedRefresh());
     }
 
     private debouncedRefresh() {
@@ -163,7 +176,8 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
     }
 
     public dispose() {
-        this._watcher?.dispose();
+        this._watchers.forEach((w) => w.dispose());
+        this._watchers = [];
     }
 
     // Delegated public methods so extension.ts commands can still call them on the provider
@@ -188,8 +202,9 @@ export class GitGraphViewProvider implements vscode.WebviewViewProvider {
     }
 
     public async showCommitDetails(commitHash: string) {
-        const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        const cwd = this._repoManager.getActiveRepository()?.path;
         if (!cwd) {
+            vscode.window.showWarningMessage('No active repository');
             return;
         }
 

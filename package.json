@@ -3,7 +3,7 @@
     "publisher": "danieldev",
     "displayName": "Git Lean",
     "description": "A minimalist Git extension with a canvas-rendered commit graph and branch management — no bloat, no distractions.",
-    "version": "0.0.13",
+    "version": "0.0.14",
     "engines": {
         "vscode": "^1.75.0",
         "node": ">=24",
@@ -79,6 +79,11 @@
             ]
         },
         "commands": [
+            {
+                "command": "git-lean.selectRepository",
+                "title": "Select Repository",
+                "category": "Git Lean"
+            },
             {
                 "command": "git-lean.showGraph",
                 "title": "Git Lean: Show Graph",
