@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
+import { RepositoryManager } from './repositoryManager';
 
 interface WebviewMessage {
     command: string;
@@ -29,17 +30,42 @@ export class BranchWebviewProvider implements vscode.WebviewViewProvider {
     private _onBranchSelected: ((branch: string | null) => void) | null = null;
     private _refreshTimer?: ReturnType<typeof setTimeout>;
     private _initialized = false;
+    private _watchers: vscode.FileSystemWatcher[] = [];
 
-    constructor(private readonly _extensionUri: vscode.Uri) {
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (workspaceFolders) {
-            const watcher = vscode.workspace.createFileSystemWatcher(
-                new vscode.RelativePattern(workspaceFolders[0], '.git/**'),
-            );
+    constructor(
+        private readonly _extensionUri: vscode.Uri,
+        private readonly _repoManager: RepositoryManager,
+    ) {
+        this.setupGitWatchers();
+
+        // Refresh when active repository changes
+        _repoManager.onDidChangeRepository(() => {
+            this.refresh();
+        });
+        
+        // Refresh watchers when repositories are discovered/changed
+        _repoManager.onDidChangeRepositories(() => {
+            this.setupGitWatchers();
+        });
+    }
+
+    private setupGitWatchers() {
+        this._watchers.forEach((w) => w.dispose());
+        this._watchers = [];
+
+        const repos = this._repoManager.getRepositories();
+        for (const repo of repos) {
+            const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(repo.path, '.git/**'));
             watcher.onDidChange(() => this.debouncedRefresh());
             watcher.onDidCreate(() => this.debouncedRefresh());
             watcher.onDidDelete(() => this.debouncedRefresh());
+            this._watchers.push(watcher);
         }
+    }
+
+    public dispose() {
+        this._watchers.forEach((w) => w.dispose());
+        this._watchers = [];
     }
 
     set onBranchSelected(handler: (branch: string | null) => void) {
@@ -264,7 +290,7 @@ body {
     }
 
     private getCwd(): string | undefined {
-        return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        return this._repoManager.getActiveRepository()?.path;
     }
 
     private async getBranches(): Promise<Branch[]> {

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as cp from 'child_process';
+import { RepositoryManager } from './repositoryManager';
 
 interface Branch {
     name: string;
@@ -15,6 +16,7 @@ export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeIte
         this._onDidChangeTreeData.event;
 
     private _filter: string = '';
+    private _watchers: vscode.FileSystemWatcher[] = [];
 
     setFilter(filter: string): void {
         this._filter = filter.toLowerCase();
@@ -25,17 +27,37 @@ export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeIte
         return this._filter;
     }
 
-    constructor() {
-        // Watch for git changes
-        const workspaceFolders = vscode.workspace.workspaceFolders;
-        if (workspaceFolders) {
-            const watcher = vscode.workspace.createFileSystemWatcher(
-                new vscode.RelativePattern(workspaceFolders[0], '.git/**'),
-            );
+    constructor(private readonly _repoManager: RepositoryManager) {
+        this.setupGitWatchers();
+
+        // Refresh when active repository changes
+        _repoManager.onDidChangeRepository(() => {
+            this.refresh();
+        });
+        
+        // Refresh watchers when repositories are discovered/changed
+        _repoManager.onDidChangeRepositories(() => {
+            this.setupGitWatchers();
+        });
+    }
+
+    private setupGitWatchers() {
+        this._watchers.forEach((w) => w.dispose());
+        this._watchers = [];
+
+        const repos = this._repoManager.getRepositories();
+        for (const repo of repos) {
+            const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(repo.path, '.git/**'));
             watcher.onDidChange(() => this.refresh());
             watcher.onDidCreate(() => this.refresh());
             watcher.onDidDelete(() => this.refresh());
+            this._watchers.push(watcher);
         }
+    }
+
+    public dispose() {
+        this._watchers.forEach((w) => w.dispose());
+        this._watchers = [];
     }
 
     refresh(): void {
@@ -94,13 +116,12 @@ export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeIte
 
     private async getCurrentBranch(): Promise<string | null> {
         return new Promise((resolve) => {
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders) {
+            const cwd = this._repoManager.getActiveRepository()?.path;
+            if (!cwd) {
                 resolve(null);
                 return;
             }
 
-            const cwd = workspaceFolders[0].uri.fsPath;
             cp.exec('git rev-parse --abbrev-ref HEAD', { cwd }, (error, stdout, _stderr) => {
                 if (error) {
                     resolve(null);
@@ -113,13 +134,11 @@ export class BranchTreeProvider implements vscode.TreeDataProvider<BranchTreeIte
 
     private async getBranches(): Promise<Branch[]> {
         return new Promise((resolve) => {
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders) {
+            const cwd = this._repoManager.getActiveRepository()?.path;
+            if (!cwd) {
                 resolve([]);
                 return;
             }
-
-            const cwd = workspaceFolders[0].uri.fsPath;
             cp.exec('git branch -a --format="%(refname:short)|%(HEAD)"', { cwd }, (error, stdout, _stderr) => {
                 if (error) {
                     resolve([]);

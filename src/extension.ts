@@ -3,11 +3,14 @@ import * as cp from 'child_process';
 import { GitGraphViewProvider } from './gitGraphView';
 import { BranchWebviewProvider } from './branchWebviewProvider';
 import { BranchTreeItem } from './branchTreeProvider';
+import { RepositoryManager } from './repositoryManager';
 
 export function activate(context: vscode.ExtensionContext) {
-    const graphProvider = new GitGraphViewProvider(context.extensionUri);
-    const branchProvider = new BranchWebviewProvider(context.extensionUri);
+    const repoManager = new RepositoryManager();
+    const graphProvider = new GitGraphViewProvider(context.extensionUri, repoManager);
+    const branchProvider = new BranchWebviewProvider(context.extensionUri, repoManager);
 
+    context.subscriptions.push(repoManager);
     context.subscriptions.push(vscode.window.registerWebviewViewProvider(GitGraphViewProvider.viewType, graphProvider));
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider(BranchWebviewProvider.viewType, branchProvider),
@@ -15,9 +18,49 @@ export function activate(context: vscode.ExtensionContext) {
 
     branchProvider.onBranchSelected = (branch) => graphProvider.filterByBranch(branch);
 
+    // Create status bar item for repository selection
+    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+    statusBarItem.command = 'git-lean.selectRepository';
+
+    const updateStatusBar = () => {
+        const repos = repoManager.getRepositories();
+        const activeRepo = repoManager.getActiveRepository();
+        const autoDetect = repoManager.isAutoDetectEnabled();
+
+        if (repos.length === 0) {
+            statusBarItem.text = '$(git-branch) No Git Repos';
+            statusBarItem.tooltip = 'No git repositories found';
+            statusBarItem.hide();
+        } else if (repos.length === 1) {
+            statusBarItem.text = `$(git-branch) ${activeRepo?.name || 'Unknown'}`;
+            statusBarItem.tooltip = `${activeRepo?.name || 'Unknown'} (Git Lean)`;
+            statusBarItem.show();
+        } else {
+            if (autoDetect) {
+                statusBarItem.text = `$(git-branch) ${activeRepo?.name || 'Auto'} $(sync)`;
+                statusBarItem.tooltip = `${activeRepo?.name || 'Auto'} (Git Lean)`;
+            } else {
+                statusBarItem.text = `$(git-branch) ${activeRepo?.name || 'Select Repo'}`;
+                statusBarItem.tooltip = `${activeRepo?.name || 'Select Repo'} (Git Lean)`;
+            }
+            statusBarItem.show();
+        }
+    };
+
+    updateStatusBar();
+    repoManager.onDidChangeRepository(() => updateStatusBar());
+    context.subscriptions.push(statusBarItem);
+
+    // Command to select repository
+    context.subscriptions.push(
+        vscode.commands.registerCommand('git-lean.selectRepository', () => {
+            repoManager.selectRepository();
+        }),
+    );
+
     context.subscriptions.push(
         vscode.commands.registerCommand('git-lean.showGraph', () => {
-            GitGraphViewProvider.createOrShow(context.extensionUri);
+            GitGraphViewProvider.createOrShow(context.extensionUri, repoManager);
         }),
     );
 
@@ -57,12 +100,11 @@ export function activate(context: vscode.ExtensionContext) {
             if (!branchName) {
                 return;
             }
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders) {
+            const cwd = repoManager.getActiveRepository()?.path;
+            if (!cwd) {
+                vscode.window.showWarningMessage('No active repository');
                 return;
             }
-
-            const cwd = workspaceFolders[0].uri.fsPath;
             cp.execFile('git', ['checkout', branchName], { cwd }, (error, _stdout, _stderr) => {
                 if (error) {
                     vscode.window.showErrorMessage(`Failed to checkout branch: ${error.message}`);
@@ -90,12 +132,11 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders) {
+            const cwd = repoManager.getActiveRepository()?.path;
+            if (!cwd) {
+                vscode.window.showWarningMessage('No active repository');
                 return;
             }
-
-            const cwd = workspaceFolders[0].uri.fsPath;
             cp.execFile('git', ['branch', '-d', branchName], { cwd }, async (error, _stdout, stderr) => {
                 if (error) {
                     if (stderr.includes('not fully merged')) {
@@ -134,8 +175,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-lean.pull', () => {
-            const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+            const cwd = repoManager.getActiveRepository()?.path;
             if (!cwd) {
+                vscode.window.showWarningMessage('No active repository');
                 return;
             }
             cp.execFile('git', ['pull'], { cwd }, (error, _stdout, stderr) => {
@@ -151,8 +193,9 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand('git-lean.push', () => {
-            const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+            const cwd = repoManager.getActiveRepository()?.path;
             if (!cwd) {
+                vscode.window.showWarningMessage('No active repository');
                 return;
             }
             cp.execFile('git', ['push'], { cwd }, (error, _stdout, stderr) => {
@@ -176,8 +219,9 @@ export function activate(context: vscode.ExtensionContext) {
             if (confirm !== 'Force Push') {
                 return;
             }
-            const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+            const cwd = repoManager.getActiveRepository()?.path;
             if (!cwd) {
+                vscode.window.showWarningMessage('No active repository');
                 return;
             }
             cp.execFile('git', ['push', '--force-with-lease'], { cwd }, (error, _stdout, stderr) => {
@@ -197,11 +241,11 @@ export function activate(context: vscode.ExtensionContext) {
             if (!targetBranch) {
                 return;
             }
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders) {
+            const cwd = repoManager.getActiveRepository()?.path;
+            if (!cwd) {
+                vscode.window.showWarningMessage('No active repository');
                 return;
             }
-            const cwd = workspaceFolders[0].uri.fsPath;
 
             cp.execFile('git', ['rebase', targetBranch], { cwd }, (error, _stdout, stderr) => {
                 if (error) {
@@ -221,11 +265,11 @@ export function activate(context: vscode.ExtensionContext) {
             if (!sourceBranch) {
                 return;
             }
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders) {
+            const cwd = repoManager.getActiveRepository()?.path;
+            if (!cwd) {
+                vscode.window.showWarningMessage('No active repository');
                 return;
             }
-            const cwd = workspaceFolders[0].uri.fsPath;
 
             cp.execFile('git', ['merge', sourceBranch], { cwd }, (error, _stdout, stderr) => {
                 if (error) {
@@ -243,11 +287,11 @@ export function activate(context: vscode.ExtensionContext) {
             if (!branchNames || branchNames.length === 0) {
                 return;
             }
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders) {
+            const cwd = repoManager.getActiveRepository()?.path;
+            if (!cwd) {
+                vscode.window.showWarningMessage('No active repository');
                 return;
             }
-            const cwd = workspaceFolders[0].uri.fsPath;
 
             const label = branchNames.length === 1 ? `branch '${branchNames[0]}'` : `${branchNames.length} branches`;
             const confirm = await vscode.window.showWarningMessage(
@@ -346,12 +390,11 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
 
-            const workspaceFolders = vscode.workspace.workspaceFolders;
-            if (!workspaceFolders) {
+            const cwd = repoManager.getActiveRepository()?.path;
+            if (!cwd) {
+                vscode.window.showWarningMessage('No active repository');
                 return;
             }
-
-            const cwd = workspaceFolders[0].uri.fsPath;
             cp.execFile('git', ['checkout', '-b', newBranchName, sourceBranch], { cwd }, (error, _stdout, stderr) => {
                 if (error) {
                     vscode.window.showErrorMessage(`Failed to create branch: ${stderr || error.message}`);

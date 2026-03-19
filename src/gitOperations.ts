@@ -4,14 +4,18 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { parseGitLogOutput, type GitCommit } from './gitParser';
+import { RepositoryManager } from './repositoryManager';
 
 export type { GitCommit } from './gitParser';
 
 export class GitOperations {
-    constructor(private readonly onRefresh: () => void) {}
+    constructor(
+        private readonly onRefresh: () => void,
+        private readonly repoManager: RepositoryManager,
+    ) {}
 
     private getCwd(): string | null {
-        return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? null;
+        return this.repoManager.getActiveRepository()?.path ?? null;
     }
 
     async getGitLog(filterBranch: string | null, skip = 0, limit = 200): Promise<GitCommit[]> {
